@@ -30,14 +30,14 @@
     code_change/3]).
 
 -export([update_consumer_connections/2,update_node_conections/2,get_interface_provider_node/1,get_host_connections/2, select_connection/1,
-    select_connection/2, update_connection_readonly/2, get_host_flag/1, get_host_flag/2,clean_invalid_provider/1]).
+    select_connection/2, update_connection_readonly/2, get_host_flag/1, get_host_flag/2,clean_invalid_provider/1,update_interface_info/1,get_interface_info/1]).
 
 -include("dubbo.hrl").
 -define(SERVER, ?MODULE).
 
 -define(INTERFCE_LIST_TABLE, interface_list).
 
--define(INTERFAE_INFO_TABLE,dubbo_interface_info).
+-define(INTERFACE_INFO_TABLE,dubbo_interface_info).
 
 -define(PROVIDER_NODE_LIST_TABLE, provider_node_list).
 
@@ -99,8 +99,8 @@ init_ets_table() ->
         _Type1:Reason1 ->
             logger:error("new ets table  PROVIDER_NODE_LIST_TABLE error ~p", [Reason1])
     end,
-    try ets:new(?INTERFAE_INFO_TABLE, [public, named_table, {keypos, 2}]) of
-        ?INTERFAE_INFO_TABLE ->
+    try ets:new(?INTERFACE_INFO_TABLE, [public, named_table, {keypos, 2}]) of
+        ?INTERFACE_INFO_TABLE ->
             ok
     catch
         _Type1:Reason1 ->
@@ -204,9 +204,19 @@ get_host_connections(Host, Port) ->
     List = ets:lookup(?PROVIDER_NODE_LIST_TABLE, HostFlag),
     List.
 
-update_interface_info(InterfaceInfo)->
-    ets:insert(?INTERFAE_INFO_TABLE,InterfaceInfo).
 
+
+update_interface_info(InterfaceInfo)->
+    ets:insert(?INTERFACE_INFO_TABLE,InterfaceInfo).
+
+
+get_interface_info(Interface) ->
+    case ets:lookup(?INTERFACE_INFO_TABLE,Interface) of
+        [] ->
+            undefined;
+        [Result]->
+            Result
+    end.
 
 %%%===================================================================
 %%% Internal functions

@@ -15,7 +15,13 @@
 %% limitations under the License.
 %%------------------------------------------------------------------------------
 -module(dubbo_filter).
--author("dlive").
+-include("dubbo.hrl").
+
+-type filter_result() ::{stop,term()}|{error,term()}|term().
+
+-callback(invoker(Invocation::#dubbo_rpc_invocation{})->filter_result()).
 
 %% API
 -export([]).
+
+

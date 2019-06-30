@@ -15,7 +15,12 @@
 %% limitations under the License.
 %%------------------------------------------------------------------------------
 -module(dubbo_cluster_failfast).
--author("dlive").
+-behaviour(dubbo_filter).
 
 %% API
 -export([]).
+
+
+invoker(Invocation)->
+
+    ok.

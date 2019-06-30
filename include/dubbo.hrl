@@ -65,10 +65,10 @@
 
 -record(dubbo_rpc_invocation, {
     serialVersionUID = -4355285085441097045,
-    className :: string(),
-    classVersion :: string(),
-    methodName :: string(),
-    parameterDesc :: string(),
+    className :: binary(),
+    classVersion :: binary(),
+    methodName :: binary(),
+    parameterDesc :: binary(),
     parameterTypes = [] :: [#type_def{}],
     parameters = [] :: [term()],
     attachments = [] :: [term()]
@@ -100,7 +100,7 @@
 }).
 
 
--record(interface_info, {interface, loadbalance}).
+-record(interface_info, {interface, loadbalance, protocol}).
 
 -record(interface_list, {interface, pid, connection_info}).
 %%-record(provider_node_list, {host_flag, pid, weight, readonly = false}).

@@ -46,7 +46,7 @@ stop(_State) ->
 init_default_hooks()->
     dubbo_extension:register(protocol,dubbo_protocol_dubbo,10),
     dubbo_extension:register(protocol_wapper,dubbo_protocol_registry,10),
-
+    dubbo_extension:register(filter, application:get_env(dubboerl,cluster,dubbo_cluster_failfast),1),
     ok.
 env_init() ->
     ets:new(?PROVIDER_IMPL_TABLE, [public, named_table]),

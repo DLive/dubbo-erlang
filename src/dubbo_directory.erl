@@ -20,7 +20,7 @@
 -include("dubboerl.hrl").
 -include("dubbo.hrl").
 
--export([subscribe/2,notify/2]).
+-export([subscribe/2, notify/2]).
 %% API
 -export([start_link/0]).
 
@@ -72,17 +72,17 @@ start_link() ->
 init([]) ->
     {ok, #state{}}.
 
-subscribe(RegistryName,SubcribeUrl)->
-    try gen_server:call(?SERVER,{subscribe,RegistryName,SubcribeUrl},5000) of
-        ok->
+subscribe(RegistryName, SubcribeUrl) ->
+    try gen_server:call(?SERVER, {subscribe, RegistryName, SubcribeUrl}, 5000) of
+        ok ->
             ok
     catch
-        Error:Reason->
+        _Error:Reason ->
             %% todo improve erro type
-            {error,Reason}
+            {error, Reason}
     end.
 
-notify(Interface,UrlList)->
+notify(Interface, UrlList) ->
     %% @todo if UrlList size is 1, and protocol is empty ,need destroyAllInvokers
 
     refresh_invoker(UrlList),
@@ -90,41 +90,43 @@ notify(Interface,UrlList)->
     ok.
 
 
-refresh_invoker(UrlList)->
+refresh_invoker(UrlList) ->
     case pick_interface(UrlList) of
-        {error,Reason}->
+        {error, Reason} ->
             fail;
-        {"empty",Interface,_}->
+        {"empty", Interface, _} ->
             todo_destroy;
-        {_,Interface,LoadBalance} ->
+        {_, Interface, LoadBalance,Protocol} ->
             OldProviderHosts = dubbo_provider_consumer_reg_table:get_interface_provider_node(Interface),
-            NewInvokers = refresh_invoker(UrlList,[]),
+            NewInvokers = refresh_invoker(UrlList, []),
             NewProviderHosts = [Item#dubbo_invoker.host_flag || Item <- NewInvokers],
             DeleteProverList = OldProviderHosts -- NewProviderHosts,
             dubbo_provider_consumer_reg_table:clean_invalid_provider(DeleteProverList),
-            dubbo_provider_consumer_reg_table:update_connection_info(#interface_info{interface = Interface,loadbalance = LoadBalance})
+%%            dubbo_provider_consumer_reg_table:update_connection_info(#interface_info{interface = Interface,loadbalance = LoadBalance})
+            dubbo_provider_consumer_reg_table:update_interface_info(#interface_info{interface = Interface, loadbalance = LoadBalance,protocol = Protocol})
     end.
 %%    OldProviderHosts =
 
 
-refresh_invoker([Url|Rest],Acc)->
-    case dubbo_extension:run_fold(protocol,refer,[Url],undefined) of
+refresh_invoker([Url | Rest], Acc) ->
+    case dubbo_extension:run_fold(protocol, refer, [Url], undefined) of
         undefined ->
-            refresh_invoker(Rest,Acc);
-        {ok,Invoker} ->
-            refresh_invoker(Rest,[Invoker|Acc]);
-        {stop,_}->
-            refresh_invoker(Rest,Acc)
+            refresh_invoker(Rest, Acc);
+        {ok, Invoker} ->
+            refresh_invoker(Rest, [Invoker | Acc]);
+        {stop, _} ->
+            refresh_invoker(Rest, Acc)
     end.
 
 pick_interface([Url | _]) ->
     case dubbo_common_fun:parse_url(Url) of
-        {ok,UrlInfo}->
-            Interface = maps:get("interface",UrlInfo#dubbo_url.parameters),
-            LoadBalance = list_to_atom("dubbo_loadbalance_" ++ maps:get("loadbalance",UrlInfo#dubbo_url.parameters,"random")),
-            {UrlInfo#dubbo_url.scheme,Interface,LoadBalance};
-        {error,Reason} ->
-            {error,Reason}
+        {ok, UrlInfo} ->
+            Interface = maps:get("interface", UrlInfo#dubbo_url.parameters),
+            ProtocolModule = list_to_atom("dubbo_protocol_" ++ UrlInfo#dubbo_url.scheme),
+            LoadBalance = list_to_atom("dubbo_loadbalance_" ++ maps:get("loadbalance", UrlInfo#dubbo_url.parameters, "random")),
+            {UrlInfo#dubbo_url.scheme, Interface, LoadBalance, ProtocolModule};
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 
@@ -143,9 +145,9 @@ pick_interface([Url | _]) ->
     {noreply, NewState :: #state{}, timeout() | hibernate} |
     {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
     {stop, Reason :: term(), NewState :: #state{}}).
-handle_call({subscribe,RegistryName,SubcribeUrl}, _From, State) ->
-    NotifyFun= fun dubbo_directory:notify/1,
-    apply(RegistryName,subscribe,[SubcribeUrl,NotifyFun]),
+handle_call({subscribe, RegistryName, SubcribeUrl}, _From, State) ->
+    NotifyFun = fun dubbo_directory:notify/1,
+    apply(RegistryName, subscribe, [SubcribeUrl, NotifyFun]),
     {reply, ok, State};
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
