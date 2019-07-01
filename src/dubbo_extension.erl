@@ -18,7 +18,7 @@
 -behaviour(gen_server).
 
 %% API
--export([run/3,run_fold/4,register/3,unregister/3]).
+-export([run/3,run_fold/4,run_fold/5,register/3,unregister/3]).
 
 
 -export([start_link/0]).
@@ -67,6 +67,13 @@ run_fold(HookName, Fun, Args, Acc) ->
     case find_hooks(HookName) of
         no_hook -> Acc;
         Hooks -> run_fold1(Hooks,HookName, Fun, Args, Acc)
+    end.
+
+run_fold(HookName, Fun, Args, Acc,AppendExtension) ->
+    case find_hooks(HookName) of
+        no_hook -> Acc;
+        Hooks ->
+            run_fold1(Hooks++AppendExtension,HookName, Fun, Args, Acc)
     end.
 
 

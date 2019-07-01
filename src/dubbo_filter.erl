@@ -19,7 +19,7 @@
 
 -type filter_result() ::{stop,term()}|{error,term()}|term().
 
--callback(invoker(Invocation::#dubbo_rpc_invocation{})->filter_result()).
+-callback(invoke(Invocation::#dubbo_rpc_invocation{})->filter_result()).
 
 %% API
 -export([]).
