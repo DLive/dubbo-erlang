@@ -66,14 +66,20 @@ invoke_request(Interface, Request, RpcContext, RequestState, CallBackPid) ->
         {error, none} ->
             logger:error("[INVOKE] ~p error Reason no_provider", [Interface]),
             {error, no_provider}
-    end;
+    end.
 
-invoke_request(Interface, Request, RpcContext, RequestState, CallBackPid)->
+invoke_request(Interface, Request, RequestOption, CallBackPid)->
     case dubbo_provider_consumer_reg_table:get_interface_info(Interface) of
         undefined->
             {error, no_provider};
-        #interface_info{protocol = Protocol}->
-            Result = dubbo_extension:run_fold(filter,invoke,[Request#dubbo_request.data],undefined,[Protocol]),
+        #interface_info{protocol = Protocol,loadbalance = LoadBalance}->
+            ReferenceConfig = #reference_config{sync = is_sync(RequestOption)},
+            Invocation = Request#dubbo_request.data#dubbo_rpc_invocation{
+                loadbalance = LoadBalance,
+                call_ref = get_ref(RequestOption),
+                reference_ops = ReferenceConfig
+            },
+            Result = dubbo_extension:run_fold(filter,invoke,[Invocation],undefined,[Protocol]),
             Result
     end.
 

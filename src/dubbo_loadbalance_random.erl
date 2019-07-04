@@ -17,4 +17,8 @@
 -module(dubbo_loadbalance_random).
 
 %% API
--export([]).
+-export([select/1]).
+
+select(List)->
+
+    ok.

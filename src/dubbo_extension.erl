@@ -76,7 +76,6 @@ run_fold(HookName, Fun, Args, Acc,AppendExtension) ->
             run_fold1(Hooks++AppendExtension,HookName, Fun, Args, Acc)
     end.
 
-
 run_fold1([], _HookName,_Fun, _Args,  Acc) ->
     Acc;
 run_fold1([M | Rest], HookName,Fun, Args0,  Acc) ->
@@ -84,8 +83,7 @@ run_fold1([M | Rest], HookName,Fun, Args0,  Acc) ->
     Ret = (catch apply(M, Fun, Args)),
     case Ret of
         {'EXIT', Reason} ->
-            error_logger:error_msg("~p~n error running hook: ~p~n",
-                [HookName, Reason]),
+            logger:error("~p~n error running hook: ~p~n", [HookName, Reason]),
             run_fold1(Rest, HookName,Fun,Args0, Acc);
         stop ->
             Acc;
@@ -95,13 +93,35 @@ run_fold1([M | Rest], HookName,Fun, Args0,  Acc) ->
             run_fold1(Rest, HookName,Fun,Args0, Ret)
     end.
 
+invoke(HookName, Fun, Args, Acc,AppendExtension) ->
+    case find_hooks(HookName) of
+        no_hook -> Acc;
+        Hooks ->
+            run_fold1(Hooks++AppendExtension,HookName, Fun, Args, Acc)
+    end.
 
+do_invoke([], _HookName,_Fun, _Args,  Acc) ->
+    Acc;
+do_invoke([M | Rest], HookName,Fun, Args0,  Acc) ->
+    Args = Args0 ++ [Acc],
+    Ret = (catch apply(M, Fun, Args)),
+    case Ret of
+        {'EXIT', Reason} ->
+            logger:error("~p~n error running hook: ~p~n", [HookName, Reason]),
+            do_invoke(Rest, HookName,Fun,Args0, Acc);
+        stop ->
+            Acc;
+        {stop, NewAcc} ->
+            NewAcc;
+        {ok,Args2,NewAcc2} ->
+            do_invoke(Rest, HookName,Fun,Args2, NewAcc2)
+    end.
 
 
 %% @doc retrieve the lists of registered functions for an hook.
 -spec find(HookName::hookname()) -> {ok, [{atom(), atom()}]} | error.
 find(HookName) ->
-    case ?find_hook(HookName) of
+    case find_hooks(HookName) of
         no_hook -> error;
         Hooks -> {ok, Hooks}
     end.

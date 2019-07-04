@@ -82,3 +82,15 @@ new_transport(ProviderConfig) ->
 
 
 
+invoke(#dubbo_rpc_invocation{source_pid = CallBackPid,transport_pid = TransportPid} = Invocation,Acc) ->
+
+%%    Request2 = merge_attachments(Request, RpcContext), %% @todo need add rpc context to attachment
+    Request = dubbo_adapter:reference(Invocation),
+    {ok, RequestData} = dubbo_codec:encode_request(Request),
+    Ref = get_ref(RequestState),
+    gen_server:cast(TransportPid, {send_request, Ref, Request, RequestData, CallBackPid, RequestState}),
+    case is_sync(RequestState) of
+        true ->
+            sync_receive(Ref, get_timeout(RequestState));
+        false -> {ok, Ref}
+    end.

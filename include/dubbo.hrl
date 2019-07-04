@@ -71,7 +71,14 @@
     parameterDesc :: binary(),
     parameterTypes = [] :: [#type_def{}],
     parameters = [] :: [term()],
-    attachments = [] :: [term()]
+    attachments = [] :: [term()],
+
+    call_ref :: atom(),
+    reference_ops :: #reference_config{},
+    loadbalance :: atom(),
+    source_pid :: pid(),
+    transport_pid :: pid()
+
 }).
 
 -record(consumer_config, {
@@ -97,6 +104,21 @@
     dubbo = <<"2.5.3">>,
     methods = [],
     side = <<"provider">>
+}).
+
+
+-record(reference_config,{
+    interface,
+    application = <<"NoName">> :: binary(),
+    category = <<"consumers">> :: binary(),
+    check = false :: boolean(),
+    default_timeout = 500 :: integer(),
+    dubbo_version = <<"2.5.3">> :: binary(),
+    methods = [] :: list(),
+    revision = <<"">> :: binary(),
+    side = <<"consumers">> :: binary(),
+    sync = false ::boolean()
+
 }).
 
 

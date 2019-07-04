@@ -141,14 +141,14 @@ lib_type_register(_Config) ->
     ok.
 
 json_sync_invoker(_Config) ->
-    application:set_env(dubboerl, protocol, json),
+    application:set_env(dubboerl, serialization, json),
     R1 = userOperator:queryUserInfo(#userInfoRequest{username = "name", requestId = "111"}, #{sync=> true}),
     io:format(user, "json_sync_invoker result ~p ~n", [R1]),
     R2 = userOperator:genUserId(),
     io:format(user, "json_sync_invoker result2 ~p ~n", [R2]),
     ok.
 hessian_sync_invoker(_Config) ->
-    application:set_env(dubboerl, protocol, hessian),
+    application:set_env(dubboerl, serialization, hessian),
     R1 = userOperator:queryUserInfo(#userInfoRequest{username = "name", requestId = "111"}, #{sync=> true}),
     io:format(user, "json_sync_invoker result ~p ~n", [R1]),
     R2 = userOperator:genUserId(),

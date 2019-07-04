@@ -321,17 +321,18 @@ get_interface_provider_node(Interface) ->
     end.
 
 select_connection(Interface) ->
-    RandNum = rand:uniform(2048),
-    select_connection(Interface, RandNum).
-select_connection(Interface, RandNum) ->
+%%    RandNum = rand:uniform(2048),
+%%    select_connection(Interface, RandNum).
+%%select_connection(Interface, RandNum) ->
     case ets:lookup(?INTERFCE_LIST_TABLE, Interface) of
         [] ->
             {error, none};
         List ->
-            Len = length(List),
-            RemNum = (RandNum rem Len) + 1,
-            InterfaceListItem = lists:nth(RemNum, List),
-            {ok, InterfaceListItem#interface_list.connection_info}
+%%            Len = length(List),
+%%            RemNum = (RandNum rem Len) + 1,
+%%            InterfaceListItem = lists:nth(RemNum, List),
+            Ret = [Item#interface_list.connection_info || Item <= List],
+            {ok, Ret}
     end.
 
 -spec(update_connection_readonly(pid(), boolean()) -> ok).
