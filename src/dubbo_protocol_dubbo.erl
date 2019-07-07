@@ -65,14 +65,13 @@ getClients(ProviderConfig) ->
 
 new_transport(ProviderConfig) ->
 
-    HostFlag = get_host_flag(ProviderConfig),
-    case dubbo_provider_consumer_reg_table:get_host_connections(ProviderConfig#provider_config) of
+    case dubbo_provider_consumer_reg_table:get_host_connections(ProviderConfig#provider_config.host,ProviderConfig#provider_config.port) of
         [] ->
             case dubbo_exchanger:connect(ProviderConfig, ?MODULE) of
                 {ok, ConnectionInfo} ->
                     {ok, [ConnectionInfo]};
                 {error, Reason} ->
-                    logger:warning("start client fail ~p ~p", [Reason, HostFlag]),
+                    logger:warning("start client fail ~p ~p ~p", [Reason, ProviderConfig#provider_config.host,ProviderConfig#provider_config.port]),
                     {error, Reason}
             end;
         ConnectionInfoList ->
@@ -115,7 +114,7 @@ data_receive(Data)->
 
 
 %% @doc process event
--spec process_response(IsEvent :: boolean(), #dubbo_response{}) -> ok.
+-spec process_response(IsEvent :: boolean(), #dubbo_response{},RestData::binary()) -> ok.
 process_response(false, ResponseInfo, RestData) ->
 %%    dubbo_traffic_control:decr_count(State#state.host_flag),
 
@@ -143,7 +142,8 @@ process_request(true, #dubbo_request{data = <<"R">>}) ->
     {ok, _} = dubbo_provider_consumer_reg_table:update_connection_readonly(self(), true),
     ok;
 process_request(true, Request) ->
-    send_heartbeat_msg(Request#dubbo_request.mid, false),
+    %% @todo send heartbeat
+%%    send_heartbeat_msg(Request#dubbo_request.mid, false),
     ok;
 process_request(false, Request) ->
     ok.

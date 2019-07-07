@@ -27,22 +27,23 @@ invoke(#dubbo_rpc_invocation{className = Interface, loadbalance = LoadBalance} =
         {ok, List} ->
             Connection = loadbalance_select(LoadBalance,List),
             #connection_info{pid = Pid, host_flag = HostFlag} =Connection,
-            case dubbo_traffic_control:check_goon(HostFlag, 199) of
-                ok ->
-                    {ok,Invocation#dubbo_rpc_invocation{transport_pid = Pid},Acc};
-%%                    Request2 = merge_attachments(Request, RpcContext), %% @todo need add rpc context to attachment
-
-%%                    {ok, RequestData} = dubbo_codec:encode_request(Request2),
-%%                    Ref = get_ref(RequestState),
-%%                    gen_server:cast(Pid, {send_request, Ref, Request2, RequestData, CallBackPid, RequestState}),
-%%                    case is_sync(RequestState) of
-%%                        true ->
-%%                            sync_receive(Ref, get_timeout(RequestState));
-%%                        false -> {ok, Ref}
-%%                    end;
-                full ->
-                    {error, request_full}
-            end;
+            {ok,Invocation#dubbo_rpc_invocation{transport_pid = Pid},Acc};
+%%            case dubbo_traffic_control:check_goon(HostFlag, 199) of
+%%                ok ->
+%%
+%%%%                    Request2 = merge_attachments(Request, RpcContext), %% @todo need add rpc context to attachment
+%%
+%%%%                    {ok, RequestData} = dubbo_codec:encode_request(Request2),
+%%%%                    Ref = get_ref(RequestState),
+%%%%                    gen_server:cast(Pid, {send_request, Ref, Request2, RequestData, CallBackPid, RequestState}),
+%%%%                    case is_sync(RequestState) of
+%%%%                        true ->
+%%%%                            sync_receive(Ref, get_timeout(RequestState));
+%%%%                        false -> {ok, Ref}
+%%%%                    end;
+%%                full ->
+%%                    {error, request_full}
+%%            end;
         {error, none} ->
             logger:error("[INVOKE] ~p error Reason no_provider", [Interface]),
             {error, no_provider}

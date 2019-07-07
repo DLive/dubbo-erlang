@@ -20,9 +20,9 @@
 -include("dubboerl.hrl").
 
 %% API
--export([refer/1]).
+-export([refer/2]).
 
-refer(Url)->
+refer(Url,Acc)->
     {ok,UrlInfo} =  dubbo_common_fun:parse_url(Url),
 
     {ok,RegistryName} = dubbo_registry:setup_register(UrlInfo),

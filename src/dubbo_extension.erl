@@ -31,17 +31,17 @@
 -record(state, {}).
 
 
--spec reg(HookName::hookname(), Module::atom(),Priority::integer()) -> ok | {error, term()}.
+-spec register(HookName::atom(), Module::atom(),Priority::integer()) -> ok | {error, term()}.
 register(HookName, Module,Priority) ->
     gen_server:call(?MODULE, {register, HookName, {Priority, {Module}}}).
 
--spec unregister(HookName::hookname(), Module::atom(),Priority::integer()) -> ok.
+-spec unregister(HookName::atom(), Module::atom(),Priority::integer()) -> ok.
 unregister(HookName, Module,Priority) ->
     gen_server:call(?MODULE, {unregister, HookName, {Priority, Module}}).
 
 %% @doc run all hooks registered for the HookName.
 %% Execution can be interrupted if an hook return the atom `stop'.
--spec run(HookName::hookname(), Args::list()) -> ok.
+-spec run(HookName::atom(),Fun::atom(), Args::list()) -> ok.
 run(HookName,Fun, Args) ->
     case find_hooks(HookName) of
         no_hook -> ok;
@@ -62,7 +62,7 @@ run1([M | Rest], HookName, Fun, Args) ->
             run1(Rest, HookName,Fun, Args)
     end.
 
--spec run_fold(HookName::hookname(), Args::list(), Acc::any()) -> Acc2::any().
+-spec run_fold(HookName::atom(), Fun::atom(),Args::list(), Acc::any()) -> Acc2::any().
 run_fold(HookName, Fun, Args, Acc) ->
     case find_hooks(HookName) of
         no_hook -> Acc;
@@ -126,7 +126,7 @@ do_invoke([M | Rest], HookName,Fun, Args0,  Acc) ->
 
 
 %% @doc retrieve the lists of registered functions for an hook.
--spec find(HookName::hookname()) -> {ok, [{atom(), atom()}]} | error.
+-spec find(HookName::atom()) -> {ok, [{atom(), atom()}]} | error.
 find(HookName) ->
     case find_hooks(HookName) of
         no_hook -> error;

@@ -74,7 +74,7 @@ url_to_binary(UrlInfo) ->
                 "";
             Parameter ->
                 KeyValues = maps:to_list(Parameter),
-                KeyValues2 = [io_lib:format("~s=~s", [Key, http_uri:encode(Value)]) || {Key, Value} <= KeyValues],
+                KeyValues2 = [io_lib:format("~s=~s", [Key, http_uri:encode(Value)]) || {Key, Value} <- KeyValues],
                 ParameterStr1 = string:join(KeyValues2, "&"),
                 ParameterStr2 = ["?" | ParameterStr1],
                 list_to_binary(ParameterStr2)

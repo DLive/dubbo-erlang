@@ -101,11 +101,11 @@ get_refinfo(ConsumerInfo)->
         {"sticky","false"},
         {"timestamp",dubbo_time_util:timestamp_ms()}
     ],
-    KeyValues2 = [io_lib:format("~s=~p", [Key, Value]) || {Key, Value} <= KeyValues],
+    KeyValues2 = [io_lib:format("~s=~p", [Key, Value]) || {Key, Value} <- KeyValues],
     ParameterStr1 = string:join(KeyValues2, "&"),
     list_to_binary(http_uri:encode(ParameterStr1)).
 %%    <<"application%3Dhello-world%26default.check%3Dfalse%26default.lazy%3Dfalse%26default.retries%3D0%26default.sticky%3Dfalse%26default.timeout%3D300000%26dubbo%3D2.0.2%26interface%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26lazy%3Dfalse%26methods%3DqueryUserInfo%2CqueryUserList%2CgenUserId%2CgetUserInfo%26pid%3D68901%26register.ip%3D127..0.1%26release%3D2.7.1%26retries%3D0%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1559727789953">>.
 
 get_registry_type()->
     %%todo
-    atom_to_binary(application:get_env(dubboerl,registry,zookeeper)).
+    atom_to_binary(application:get_env(dubboerl,registry,zookeeper),utf8).

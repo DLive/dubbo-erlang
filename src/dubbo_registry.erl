@@ -44,4 +44,4 @@ register(RegistryName,Url) ->
 get_registry_module(Info) ->
     RegistryName = Info#dubbo_url.scheme,
     FullName = << <<"dubbo_registry_">>, RegistryName/binary>>,
-    binary_to_existing_atom(FullName).
+    binary_to_existing_atom(FullName,latin1).

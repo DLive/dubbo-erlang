@@ -63,6 +63,21 @@
     decode_state
 }).
 
+
+-record(reference_config,{
+    interface,
+    application = <<"NoName">> :: binary(),
+    category = <<"consumers">> :: binary(),
+    check = false :: boolean(),
+    default_timeout = 500 :: integer(),
+    dubbo_version = <<"2.5.3">> :: binary(),
+    methods = [] :: list(),
+    revision = <<"">> :: binary(),
+    side = <<"consumers">> :: binary(),
+    sync = false ::boolean()
+
+}).
+
 -record(dubbo_rpc_invocation, {
     serialVersionUID = -4355285085441097045,
     className :: binary(),
@@ -106,20 +121,6 @@
     side = <<"provider">>
 }).
 
-
--record(reference_config,{
-    interface,
-    application = <<"NoName">> :: binary(),
-    category = <<"consumers">> :: binary(),
-    check = false :: boolean(),
-    default_timeout = 500 :: integer(),
-    dubbo_version = <<"2.5.3">> :: binary(),
-    methods = [] :: list(),
-    revision = <<"">> :: binary(),
-    side = <<"consumers">> :: binary(),
-    sync = false ::boolean()
-
-}).
 
 
 -record(interface_info, {interface, loadbalance, protocol}).

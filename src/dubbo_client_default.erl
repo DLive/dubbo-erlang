@@ -53,8 +53,6 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link(Name :: binary(), ProviderConfig :: #provider_config{}) ->
-    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(ProviderConfig) ->
     gen_server:start_link(?MODULE, [ProviderConfig], []).
 

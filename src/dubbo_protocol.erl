@@ -16,7 +16,7 @@
 %%------------------------------------------------------------------------------
 -module(dubbo_protocol).
 
--callback refer(Url,Acc)->ok.
+-callback refer(Url::binary(),Acc::term())->ok.
 
 %%%% API
 %%-export([refer/2]).

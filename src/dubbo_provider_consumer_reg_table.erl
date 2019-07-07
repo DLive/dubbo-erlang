@@ -30,7 +30,7 @@
     code_change/3]).
 
 -export([update_consumer_connections/2,update_node_conections/2,get_interface_provider_node/1,get_host_connections/2, select_connection/1,
-    select_connection/2, update_connection_readonly/2, get_host_flag/1, get_host_flag/2,clean_invalid_provider/1,update_interface_info/1,get_interface_info/1]).
+    update_connection_readonly/2, get_host_flag/1, get_host_flag/2,clean_invalid_provider/1,update_interface_info/1,get_interface_info/1]).
 
 -include("dubbo.hrl").
 -define(SERVER, ?MODULE).
@@ -103,8 +103,8 @@ init_ets_table() ->
         ?INTERFACE_INFO_TABLE ->
             ok
     catch
-        _Type1:Reason1 ->
-            logger:error("new ets table  PROVIDER_NODE_LIST_TABLE error ~p", [Reason1])
+        _Type2:Reason2 ->
+            logger:error("new ets table  PROVIDER_NODE_LIST_TABLE error ~p", [Reason2])
     end,
     ok.
 %%--------------------------------------------------------------------
@@ -123,13 +123,13 @@ init_ets_table() ->
     {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
     {stop, Reason :: term(), NewState :: #state{}}).
 
-handle_call({add_consumer, Interface, ProviderNodeList}, _From, State) ->
-
-    OldProviderList = get_interface_provider_node(Interface),
-    NewProviderList = add_consumer(ProviderNodeList, []),
-    DeleteProverList = OldProviderList -- NewProviderList,
-    clean_invalid_provider(DeleteProverList),
-    {reply, ok, State};
+%%handle_call({add_consumer, Interface, ProviderNodeList}, _From, State) ->
+%%
+%%    OldProviderList = get_interface_provider_node(Interface),
+%%    NewProviderList = add_consumer(ProviderNodeList, []),
+%%    DeleteProverList = OldProviderList -- NewProviderList,
+%%    clean_invalid_provider(DeleteProverList),
+%%    {reply, ok, State};
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
@@ -331,7 +331,7 @@ select_connection(Interface) ->
 %%            Len = length(List),
 %%            RemNum = (RandNum rem Len) + 1,
 %%            InterfaceListItem = lists:nth(RemNum, List),
-            Ret = [Item#interface_list.connection_info || Item <= List],
+            Ret = [Item#interface_list.connection_info || Item <- List],
             {ok, Ret}
     end.
 
