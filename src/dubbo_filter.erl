@@ -17,10 +17,11 @@
 -module(dubbo_filter).
 -include("dubbo.hrl").
 
--type filter_result() ::{stop,term()}|{error,term()}|term().
+-type filter_result() :: {stop, term()}|{error, term()}|term().
 
--callback(invoke(Invocation::#dubbo_rpc_invocation{},Acc::filter_result())->filter_result()).
+-callback(invoke(Invocation :: #dubbo_rpc_invocation{}, Acc :: invoke_result()) -> filter_result()).
 
+-callback(on_response(Invocation :: invocation(), Result :: invoke_result()) -> filter_result()).
 %% API
 -export([]).
 

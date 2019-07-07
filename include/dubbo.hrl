@@ -130,3 +130,7 @@
 
 -type dubbo_request() :: #dubbo_request{}.
 -type dubbo_response() :: #dubbo_response{}.
+-type invocation():: #dubbo_rpc_invocation{}.
+
+%% @doc invoke return info
+-type invoke_result() :: {ok, reference()}| {ok, reference(), Data :: any(), RpcContent :: list()}| {error, Reason :: timeout|no_provider|any()}.

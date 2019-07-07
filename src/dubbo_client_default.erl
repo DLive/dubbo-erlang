@@ -120,11 +120,11 @@ handle_call(_Request, _From, State) ->
     {noreply, NewState :: #state{}, timeout() | hibernate} |
     {stop, Reason :: term(), NewState :: #state{}}).
 
-handle_cast({send_request, Ref, Request, Data, SourcePid, RequestState}, State) ->
+handle_cast({send_request, Ref, Request, Data, SourcePid, Invocation}, State) ->
     logger:debug("[send_request begin] send data to provider consumer mid ~p pid ~p sourcePid ~p", [Request#dubbo_request.mid, self(), SourcePid]),
     NewState = case send_msg(Data, State) of
                    ok ->
-                       save_request_info(Request, SourcePid, Ref, RequestState),
+                       save_request_info(Request, SourcePid, Ref, Invocation),
                        logger:debug("[send_request end] send data to provider consumer pid ~p state ok", [self()]),
                        State;
                    {error, closed} ->
@@ -356,76 +356,11 @@ check_recv_data(<<>>, State) ->
     {next_buffer, <<>>, State}.
 
 
-process_data(Data, State) ->
-    <<Header:16/binary, RestData/binary>> = Data,
-    case dubbo_codec:decode_header(Header) of
-        {ok, response, ResponseInfo} ->
-            process_response(ResponseInfo#dubbo_response.is_event, ResponseInfo, RestData, State),
-%%            dubbo_traffic_control:decr_count(State#state.host_flag),
-%%            case get_earse_request_info(ResponseInfo#dubbo_response.mid) of
-%%                undefined->
-%%                    logger:error("dubbo response can't find request data,response ~p",[ResponseInfo]);
-%%                {SourcePid,Ref,_RequestState} ->
-%%                    {ok,Res} = dubbo_codec:decode_response(ResponseInfo,RestData),
-%%
-%%                    logger:info("got one response mid ~p, is_event ~p state ~p",[Res#dubbo_response.mid,Res#dubbo_response.is_event,Res#dubbo_response.state]),
-%%                    case Res#dubbo_response.is_event of
-%%                        false ->
-%%                            %% todo rpccontent need merge response with request
-%%                            RpcContent=[],
-%%                            ResponseData = dubbo_type_transfer:response_to_native(Res),
-%%                            gen_server:cast(SourcePid,{response_process,Ref,RpcContent,ResponseData});
-%%                        _->
-%%                            ok
-%%                    end
-%%            end,
-            {ok, State};
-        {ok, request, RequestInfo} ->
-            {ok, Req} = dubbo_codec:decode_request(RequestInfo, RestData),
-            logger:info("get one request mid ~p, is_event ~p", [Req#dubbo_request.mid, Req#dubbo_request.is_event]),
-            {ok, State2} = process_request(Req#dubbo_request.is_event, Req, State),
-            {ok, State2};
-        {error, Type, RelData} ->
-            logger:error("process_data error type ~p RelData ~p", [Type, RelData]),
-            {ok, State}
-    end.
+process_data(Data, #state{handler = ProtocolHandle} = State) ->
+    ProtocolHandle:data_receive(Data),
+    {ok,State}.
 
-
-%% @doc process event
--spec process_response(IsEvent :: boolean(), #dubbo_response{}, #state{}, term()) -> ok.
-process_response(false, ResponseInfo, RestData, State) ->
-    dubbo_traffic_control:decr_count(State#state.host_flag),
-    case get_earse_request_info(ResponseInfo#dubbo_response.mid) of
-        undefined ->
-            logger:error("dubbo response can't find request data,response ~p", [ResponseInfo]);
-        {SourcePid, Ref, _RequestState} ->
-            {ok, Res} = dubbo_codec:decode_response(ResponseInfo, RestData),
-            logger:info("got one response mid ~p, is_event ~p state ~p", [Res#dubbo_response.mid, Res#dubbo_response.is_event, Res#dubbo_response.state]),
-            case Res#dubbo_response.is_event of
-                false ->
-                    %% todo rpccontent need merge response with request
-                    RpcContent = [],
-                    ResponseData = dubbo_type_transfer:response_to_native(Res),
-                    gen_server:cast(SourcePid, {response_process, Ref, RpcContent, ResponseData});
-                _ ->
-                    ok
-            end
-    end,
-    {ok, State};
-process_response(true, _ResponseInfo, _RestData, State) ->
-    {ok, State}.
-
-process_request(true, #dubbo_request{data = <<"R">>}, State) ->
-    {ok, _} = dubbo_provider_consumer_reg_table:update_connection_readonly(self(), true),
-    {ok, State};
-process_request(true, Request, State) ->
-    {ok, NewState} = send_heartbeat_msg(Request#dubbo_request.mid, false, State),
-    {ok, NewState};
-process_request(false, Request, State) ->
-    {ok, State}.
 
 
 save_request_info(Request, SourcePid, Ref, RequestState) ->
     put(Request#dubbo_request.mid, {SourcePid, Ref, RequestState}).
-get_earse_request_info(Mid) ->
-    erase(Mid).

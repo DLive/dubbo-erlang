@@ -18,7 +18,7 @@
 -behaviour(gen_server).
 
 %% API
--export([run/3,run_fold/4,run_fold/5,register/3,unregister/3]).
+-export([run/3,run_fold/4,run_fold/5,register/3,unregister/3,invoke/5,invoke_foldr/4]).
 
 
 -export([start_link/0]).
@@ -93,11 +93,18 @@ run_fold1([M | Rest], HookName,Fun, Args0,  Acc) ->
             run_fold1(Rest, HookName,Fun,Args0, Ret)
     end.
 
+invoke_foldr(HookName, Fun, Args, Acc) ->
+    case find_hooks(HookName) of
+        no_hook -> Acc;
+        Hooks ->
+            do_invoke(lists:reverse(Hooks),HookName, Fun, Args, Acc)
+    end.
+
 invoke(HookName, Fun, Args, Acc,AppendExtension) ->
     case find_hooks(HookName) of
         no_hook -> Acc;
         Hooks ->
-            run_fold1(Hooks++AppendExtension,HookName, Fun, Args, Acc)
+            do_invoke(Hooks++AppendExtension,HookName, Fun, Args, Acc)
     end.
 
 do_invoke([], _HookName,_Fun, _Args,  Acc) ->
