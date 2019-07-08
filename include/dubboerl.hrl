@@ -21,6 +21,14 @@
 -define(TRAFFIC_CONTROL, traffic_control).
 
 
--record(dubbo_url, {scheme, user_info, host, port, path, parameters, fragment}).
+-record(dubbo_url, {
+    scheme :: binary() ,
+    user_info :: binary(),
+    host:: binary(),
+    port::integer(),
+    path:: binary(),
+    parameters::map(),
+    fragment::binary()
+}).
 
 -record(dubbo_invoker, {host_flag, handle}).

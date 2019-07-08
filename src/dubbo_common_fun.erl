@@ -18,7 +18,7 @@
 
 -include("dubboerl.hrl").
 %% API
--export([local_ip_v4/0, local_ip_v4_str/0, parse_url/1, url_to_binary/1]).
+-export([local_ip_v4/0, local_ip_v4_str/0, parse_url/1, url_to_binary/1,parse_url_parameter/1]).
 
 local_ip_v4() ->
     {ok, Addrs} = inet:getifaddrs(),
@@ -45,14 +45,24 @@ parse_url(Url) ->
                            false ->
                                Query
                        end,
-            QueryListTmp = string:tokens(QueryStr, "&"),
-            Parameters = parse_url_parameter(QueryListTmp, #{}),
-            Result = #dubbo_url{scheme = Scheme, host = Host, port = Port, parameters = Parameters},
+            Parameters = parse_url_parameter(QueryStr),
+            Result = #dubbo_url{
+                scheme = atom_to_binary(Scheme,utf8),
+                host = list_to_binary(Host),
+                port = Port,
+                parameters = Parameters
+            },
             {ok, Result};
         {error, R1} ->
             {error, R1}
     end.
 
+
+parse_url_parameter(ParameterStr) when is_binary(ParameterStr) ->
+    parse_url_parameter(binary_to_list(ParameterStr));
+parse_url_parameter(ParameterStr)->
+    QueryListTmp = string:tokens(ParameterStr, "&"),
+    parse_url_parameter(QueryListTmp,#{}).
 
 parse_url_parameter([], Parameters) ->
     Parameters;
@@ -60,7 +70,7 @@ parse_url_parameter([Item | Rest], Parameters) ->
     case string:tokens(Item, "=") of
         KeyPair when length(KeyPair) == 2 ->
             [Key, Value] = KeyPair,
-            parse_url_parameter(Rest, maps:put(Key, Value, Parameters));
+            parse_url_parameter(Rest, maps:put(list_to_binary(Key), list_to_binary(Value), Parameters));
         KeyPair2 ->
             logger:error("parse parameter error, keypair ~p", [KeyPair2]),
             parse_url_parameter(Rest, Parameters)
@@ -74,10 +84,9 @@ url_to_binary(UrlInfo) ->
                 "";
             Parameter ->
                 KeyValues = maps:to_list(Parameter),
-                KeyValues2 = [io_lib:format("~s=~s", [Key, http_uri:encode(Value)]) || {Key, Value} <- KeyValues],
+                KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- KeyValues],
                 ParameterStr1 = string:join(KeyValues2, "&"),
-                ParameterStr2 = ["?" | ParameterStr1],
-                list_to_binary(ParameterStr2)
+                list_to_binary(ParameterStr1)
         end,
     Value = io_lib:format(<<"~s://~s:~p/~s?~s">>,
         [

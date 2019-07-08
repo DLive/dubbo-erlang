@@ -42,6 +42,7 @@ register(RegistryName,Url) ->
 
 
 get_registry_module(Info) ->
+    io:format(user,"teset============= ~p",[Info]),
     RegistryName = Info#dubbo_url.scheme,
-    FullName = << <<"dubbo_registry_">>, RegistryName/binary>>,
+    FullName = << <<"dubbo_registry_">>/binary, RegistryName/binary>>,
     binary_to_existing_atom(FullName,latin1).

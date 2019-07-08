@@ -33,7 +33,7 @@
 
 -spec register(HookName::atom(), Module::atom(),Priority::integer()) -> ok | {error, term()}.
 register(HookName, Module,Priority) ->
-    gen_server:call(?MODULE, {register, HookName, {Priority, {Module}}}).
+    gen_server:call(?MODULE, {register, HookName, {Priority, Module}}).
 
 -spec unregister(HookName::atom(), Module::atom(),Priority::integer()) -> ok.
 unregister(HookName, Module,Priority) ->
@@ -219,5 +219,6 @@ find_hooks(HookName)->
         []->
             no_hook;
         [{_, Modules}]->
-            Modules
+            Modules1 = [Module || {_,Module} <- Modules],
+            Modules1
     end.

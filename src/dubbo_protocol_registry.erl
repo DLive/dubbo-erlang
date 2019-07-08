@@ -24,8 +24,8 @@
 
 refer(Url,Acc)->
     {ok,UrlInfo} =  dubbo_common_fun:parse_url(Url),
-
-    {ok,RegistryName} = dubbo_registry:setup_register(UrlInfo),
+    RegistryUrlInfo = gen_registry_urlinfo(UrlInfo),
+    {ok,RegistryName} = dubbo_registry:setup_register(RegistryUrlInfo),
 
     ConsumerUrl = gen_consumer_url(UrlInfo),
     %% 通知directory
@@ -41,7 +41,7 @@ gen_consumer_url(UrlInfo)->
     Parameters = UrlInfo#dubbo_url.parameters,
     #{<<"refer">> := Refer} = Parameters,
     Refer2 = http_uri:decode(Refer),
-    Parameters2 = dubbo_common_fun:parse_url(Refer2,#{}),
+    Parameters2 = dubbo_common_fun:parse_url_parameter(Refer2),
     #{<<"interface">> := Interface} = Parameters2,
     ConsumerUrlInfo = UrlInfo#dubbo_url{
         scheme = <<"consumer">>,
@@ -51,3 +51,10 @@ gen_consumer_url(UrlInfo)->
     },
     ConsumerUrl = dubbo_common_fun:url_to_binary(ConsumerUrlInfo),
     ConsumerUrl.
+
+gen_registry_urlinfo(UrlInfo)->
+    Parameters = UrlInfo#dubbo_url.parameters,
+    #{<<"registry">> := Registry} = Parameters,
+    UrlInfo#dubbo_url{
+        scheme = Registry
+    }.
