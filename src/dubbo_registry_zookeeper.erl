@@ -23,7 +23,7 @@
 %% API
 -export([start_link/0, register_consumer/1, register_consumer/2, gen_consumer_node_info/1, register_provider/1, provider_watcher/1]).
 
--export([start/1,register/1,subscribe/2]).
+-export([start/1, register/1, subscribe/2]).
 %% gen_server callbacks
 -export([init/1,
     handle_call/3,
@@ -34,7 +34,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {zk_pid,notify_fun}).
+-record(state, {zk_pid, provider_notify_fun}).
 
 %%%===================================================================
 %%% API
@@ -89,15 +89,16 @@ init([]) ->
     {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
     {stop, Reason :: term(), NewState :: #state{}}).
 
-handle_call({add_consumer, Interface,ConsumerUrl}, _From, State) ->
-    add_consumer(Interface,ConsumerUrl, State),
+handle_call({add_consumer, Interface, ConsumerUrl}, _From, State) ->
+    add_consumer(Interface, ConsumerUrl, State),
     {reply, ok, State};
 handle_call({add_provider, Provider}, _From, State) ->
     register_provider_path(Provider, State),
     {reply, ok, State};
-handle_call({subscribe_provider,InterfaceName,NotifyFun}, _From, #state{zk_pid = ZkPid} = State) ->
-    NewState=State#state{notify_fun = NotifyFun},
-    get_provider_list(InterfaceName,ZkPid,NotifyFun),
+handle_call({subscribe_provider, InterfaceName, NotifyFun}, _From, #state{zk_pid = ZkPid} = State) ->
+    NewState = State#state{provider_notify_fun = NotifyFun},
+    List = get_provider_list(InterfaceName, ZkPid),
+    notify_provider_change(NotifyFun,InterfaceName,List),
     {reply, ok, NewState};
 
 handle_call(_Request, _From, State) ->
@@ -114,8 +115,9 @@ handle_call(_Request, _From, State) ->
     {noreply, NewState :: #state{}} |
     {noreply, NewState :: #state{}, timeout() | hibernate} |
     {stop, Reason :: term(), NewState :: #state{}}).
-handle_cast({provider_node_change, Interface, Path}, #state{zk_pid = Pid} = State) ->
-    get_provider_and_start(Pid, Interface, Path),
+handle_cast({provider_node_change, Interface, Path}, #state{zk_pid = Pid,provider_notify_fun = NotifyFun} = State) ->
+    ProviderList = get_provider_and_start(Pid, Interface, Path),
+    notify_provider_change(NotifyFun,Interface,ProviderList),
     {noreply, State};
 handle_cast(_Request, State) ->
     {noreply, State}.
@@ -169,35 +171,34 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 
-
 %%----------------------------------------------
 %% dubbo_registry
 %%----------------------------------------------
 start(Url) ->
     ok.
-register(Url)->
-    {ok,UrlInfo} = dubbo_common_fun:parse_url(Url),
-    InterfaceName = maps:get(<<"interface">>,UrlInfo#dubbo_url.parameters),
-    register(UrlInfo#dubbo_url.scheme,InterfaceName,Url),
+register(Url) ->
+    {ok, UrlInfo} = dubbo_common_fun:parse_url(Url),
+    InterfaceName = maps:get(<<"interface">>, UrlInfo#dubbo_url.parameters),
+    register(UrlInfo#dubbo_url.scheme, InterfaceName, Url),
     ok.
 
-register(<<"consumer">>,InterfaceName,Url)->
-    gen_server:call(?SERVER, {add_consumer,InterfaceName, Url}),
+register(<<"consumer">>, InterfaceName, Url) ->
+    gen_server:call(?SERVER, {add_consumer, InterfaceName, Url}),
     ok;
-register(<<"provider">>,InterfaceName,Url)->
+register(<<"provider">>, InterfaceName, Url) ->
 
     ok.
 
-subscribe(SubcribeUrl,NotifyFun)->
-    {ok,UrlInfo} = dubbo_common_fun:parse_url(SubcribeUrl),
-    InterfaceName = maps:get(<<"interface">>,UrlInfo#dubbo_url.parameters),
-    try gen_server:call(?SERVER,{subscribe_provider,InterfaceName,NotifyFun},5000) of
-        ok->
+subscribe(SubcribeUrl, NotifyFun) ->
+    {ok, UrlInfo} = dubbo_common_fun:parse_url(SubcribeUrl),
+    InterfaceName = maps:get(<<"interface">>, UrlInfo#dubbo_url.parameters),
+    try gen_server:call(?SERVER, {subscribe_provider, InterfaceName, NotifyFun}, 5000) of
+        ok ->
             ok
     catch
-        Error:Reason->
+        Error:Reason ->
             %%todo improve error type
-            {error,Reason}
+            {error, Reason}
     end.
 
 register_consumer(Consumer) ->
@@ -222,10 +223,11 @@ connection() ->
         {monitor, self()}]),
     {ok, Pid}.
 
-add_consumer(InterfaceName,ConsumerUrl, State) ->
+add_consumer(InterfaceName, ConsumerUrl, State) ->
     Pid = State#state.zk_pid,
 %%    ConsumerNode = gen_consumer_node_info(Consumer),
     ConsumerNode2 = list_to_binary(edoc_lib:escape_uri(binary_to_list(ConsumerUrl))),
+    io:format("will add_consumer interface ~p~n", [InterfaceName]),
     check_and_create_path(Pid, <<"">>, [{<<"dubbo">>, p}, {InterfaceName, p}, {<<"consumers">>, p}, {ConsumerNode2, e}]),
     %% todo
 %%    get_provider_list(Consumer, State),
@@ -237,19 +239,23 @@ register_provider_path(Provider, State) ->
     ok.
 
 
-get_provider_list(InterfaceName,ZkPid,NotifyFun) ->
+get_provider_list(InterfaceName, ZkPid) ->
     InterfacePath = <<<<"/dubbo/">>/binary, InterfaceName/binary, <<"/providers">>/binary>>,
-    ChildList= get_provider_and_start(ZkPid, InterfaceName, InterfacePath),
-    NotifyFun(InterfaceName,ChildList),
-    ok.
+    ChildList = get_provider_and_start(ZkPid, InterfaceName, InterfacePath),
+%%    NotifyFun(InterfaceName, ChildList),
+    ChildList.
 get_provider_and_start(Pid, Interface, Path) ->
     case erlzk:get_children(Pid, Path, spawn(dubbo_registry_zookeeper, provider_watcher, [Interface])) of
         {ok, ChildList} ->
             logger:debug("get provider list ~p", [ChildList]),
 %%            start_provider_process(Interface, ChildList),
             ChildList;
+        {error, no_node} ->
+            logger:warning("interface ~p provide zk node unexist", [Interface]),
+            check_and_create_path(Pid, <<"">>, [{<<"dubbo">>, p}, {Interface, p}, {<<"providers">>, p}]),
+            get_provider_and_start(Pid, Interface, Path);
         {error, R1} ->
-            logger:debug("[add_consumer] get_provider_list error ~p ~p", [R1]),
+            logger:debug("[add_consumer] get_provider_list error ~p", [R1]),
             []
     end.
 
@@ -265,6 +271,23 @@ provider_watcher(Interface) ->
     end,
     ok.
 
+notify_provider_change(Fun, Interface, []) ->
+    UrlInfo = #dubbo_url{
+        scheme = <<"empty">>,
+        host = <<"127.0.0.1">>,
+        path = Interface,
+        port = 80,
+        parameters = #{}
+    },
+    UrlInfoBin = dubbo_common_fun:url_to_binary(UrlInfo),
+    Fun(Interface,[UrlInfoBin]),
+    ok;
+notify_provider_change(Fun, Interface, List) ->
+    List2 = [http_uri:decode(Item) || Item <- List],
+    Fun(Interface,List2),
+    ok.
+
+
 
 create_path(Pid, Path, CreateType) ->
     case erlzk:create(Pid, Path, CreateType) of
@@ -279,6 +302,7 @@ check_and_create_path(_Pid, _RootPath, []) ->
     ok;
 check_and_create_path(Pid, RootPath, [{Item, CreateType} | Rst]) ->
     CheckPath = <<RootPath/binary, <<"/">>/binary, Item/binary>>,
+
     case erlzk:exists(Pid, CheckPath) of
         {ok, Stat} ->
             check_and_create_path(Pid, CheckPath, Rst);

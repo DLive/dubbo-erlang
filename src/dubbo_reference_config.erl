@@ -67,7 +67,7 @@ gen_parameter(ConsumerInfo)->
     Para = #{
         <<"application">> => get_appname(ConsumerInfo),
         <<"dubbo">> => <<"2.0.2">>,
-        <<"pid">> => get_pid(),
+        <<"pid">> => list_to_binary(get_pid()),
         <<"refer">> => get_refinfo(ConsumerInfo),
         <<"registry">> => get_registry_type(),
         <<"release">> => <<"2.7.1">>,
@@ -83,7 +83,7 @@ get_pid()->
 get_refinfo(ConsumerInfo)->
     KeyValues=[
         {"application",ConsumerInfo#consumer_config.application},
-        {"default.check",ConsumerInfo#consumer_config.check},
+        {"default.check",atom_to_list(ConsumerInfo#consumer_config.check)},
         {"default.lazy","false"},
         {"default.retries","0"},
         {"default.sticky","false"},
@@ -91,15 +91,15 @@ get_refinfo(ConsumerInfo)->
         {"dubbo","2.0.2"},
         {"interface",ConsumerInfo#consumer_config.interface},
         {"lazy","false"},
-        {"methods",ConsumerInfo#consumer_config.methods},
+        {"methods",string:join(ConsumerInfo#consumer_config.methods,",")},
         {"register.ip",ConsumerInfo#consumer_config.application},
         {"release","2.7.1"},
         {"pid",get_pid()},
         {"side","consumer"},
         {"sticky","false"},
-        {"timestamp",dubbo_time_util:timestamp_ms()}
+        {"timestamp",integer_to_list(dubbo_time_util:timestamp_ms())}
     ],
-    KeyValues2 = [io_lib:format("~s=~p", [Key, Value]) || {Key, Value} <- KeyValues],
+    KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- KeyValues],
     ParameterStr1 = string:join(KeyValues2, "&"),
     list_to_binary(http_uri:encode(ParameterStr1)).
 %%    <<"application%3Dhello-world%26default.check%3Dfalse%26default.lazy%3Dfalse%26default.retries%3D0%26default.sticky%3Dfalse%26default.timeout%3D300000%26dubbo%3D2.0.2%26interface%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26lazy%3Dfalse%26methods%3DqueryUserInfo%2CqueryUserList%2CgenUserId%2CgetUserInfo%26pid%3D68901%26register.ip%3D127..0.1%26release%3D2.7.1%26retries%3D0%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1559727789953">>.

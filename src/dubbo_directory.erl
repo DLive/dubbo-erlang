@@ -73,15 +73,12 @@ init([]) ->
     {ok, #state{}}.
 
 subscribe(RegistryName, SubcribeUrl) ->
-    try gen_server:call(?SERVER, {subscribe, RegistryName, SubcribeUrl}, 5000) of
-        ok ->
-            ok
-    catch
-        _Error:Reason ->
-            %% todo improve erro type
-            {error, Reason}
-    end.
+    RegistryName:subscribe(SubcribeUrl, fun dubbo_directory:notify/2 ),
+    ok.
 
+notify(Interface, []) ->
+    logger:info("[DUBBO] directory get notify, interface provider list is empty"),
+    ok;
 notify(Interface, UrlList) ->
     %% @todo if UrlList size is 1, and protocol is empty ,need destroyAllInvokers
 
@@ -94,20 +91,30 @@ refresh_invoker(UrlList) ->
     case pick_interface(UrlList) of
         {error, Reason} ->
             fail;
-        {"empty", Interface, _} ->
+        {<<"empty">>, Interface, _} ->
             todo_destroy;
         {_, Interface, LoadBalance,Protocol} ->
+            logger:info("[DUBBO] refresh invoker for interface ~p loadbalance ~p protocol ~p",[Interface, LoadBalance,Protocol]),
             OldProviderHosts = dubbo_provider_consumer_reg_table:get_interface_provider_node(Interface),
             NewInvokers = refresh_invoker(UrlList, []),
             NewProviderHosts = [Item#dubbo_invoker.host_flag || Item <- NewInvokers],
             DeleteProverList = OldProviderHosts -- NewProviderHosts,
             dubbo_provider_consumer_reg_table:clean_invalid_provider(DeleteProverList),
+
+            lists:map(
+                fun(NewHosts)->
+                    NewHostConnections = dubbo_provider_consumer_reg_table:query_node_connections(NewHosts),
+                    dubbo_provider_consumer_reg_table:update_consumer_connections(Interface,NewHostConnections)
+                end,NewProviderHosts),
+
+
 %%            dubbo_provider_consumer_reg_table:update_connection_info(#interface_info{interface = Interface,loadbalance = LoadBalance})
             dubbo_provider_consumer_reg_table:update_interface_info(#interface_info{interface = Interface, loadbalance = LoadBalance,protocol = Protocol})
     end.
 %%    OldProviderHosts =
 
-
+refresh_invoker([],Acc) ->
+    Acc;
 refresh_invoker([Url | Rest], Acc) ->
     case dubbo_extension:run_fold(protocol, refer, [Url], undefined) of
         undefined ->
@@ -121,9 +128,10 @@ refresh_invoker([Url | Rest], Acc) ->
 pick_interface([Url | _]) ->
     case dubbo_common_fun:parse_url(Url) of
         {ok, UrlInfo} ->
-            Interface = maps:get("interface", UrlInfo#dubbo_url.parameters),
-            ProtocolModule = list_to_atom("dubbo_protocol_" ++ UrlInfo#dubbo_url.scheme),
-            LoadBalance = list_to_atom("dubbo_loadbalance_" ++ maps:get("loadbalance", UrlInfo#dubbo_url.parameters, "random")),
+            Interface = maps:get(<<"interface">>, UrlInfo#dubbo_url.parameters),
+            ProtocolModule = binary_to_existing_atom( << <<"dubbo_protocol_">>/binary,(UrlInfo#dubbo_url.scheme)/binary >>,latin1),
+            LoadBalanceName = maps:get(<<"loadbalance">>, UrlInfo#dubbo_url.parameters, <<"random">>),
+            LoadBalance = binary_to_existing_atom(<< <<"dubbo_loadbalance_">>/binary,LoadBalanceName/binary>>,latin1),
             {UrlInfo#dubbo_url.scheme, Interface, LoadBalance, ProtocolModule};
         {error, Reason} ->
             {error, Reason}

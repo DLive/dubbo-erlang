@@ -20,5 +20,7 @@
 -export([select/1]).
 
 select(List)->
-
-    ok.
+    RandNum = rand:uniform(65535),
+    Len = length(List),
+    RemNum = (RandNum rem Len) + 1,
+    lists:nth(RemNum, List).

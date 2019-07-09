@@ -40,8 +40,10 @@ refer(Url,Acc)->
 gen_consumer_url(UrlInfo)->
     Parameters = UrlInfo#dubbo_url.parameters,
     #{<<"refer">> := Refer} = Parameters,
+    io:format("===========get refer ~p~n",[Refer]),
     Refer2 = http_uri:decode(Refer),
     Parameters2 = dubbo_common_fun:parse_url_parameter(Refer2),
+    io:format("===========parse refer ~p~n",[Parameters2]),
     #{<<"interface">> := Interface} = Parameters2,
     ConsumerUrlInfo = UrlInfo#dubbo_url{
         scheme = <<"consumer">>,

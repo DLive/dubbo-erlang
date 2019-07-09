@@ -121,7 +121,7 @@ do_invoke([M | Rest], HookName,Fun, Args0,  Acc) ->
         {stop, NewAcc} ->
             NewAcc;
         {ok,Args2,NewAcc2} ->
-            do_invoke(Rest, HookName,Fun,Args2, NewAcc2)
+            do_invoke(Rest, HookName,Fun,[Args2], NewAcc2)
     end.
 
 

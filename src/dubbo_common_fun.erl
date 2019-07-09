@@ -86,14 +86,14 @@ url_to_binary(UrlInfo) ->
                 KeyValues = maps:to_list(Parameter),
                 KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- KeyValues],
                 ParameterStr1 = string:join(KeyValues2, "&"),
-                list_to_binary(ParameterStr1)
+                ParameterStr1
         end,
-    Value = io_lib:format(<<"~s://~s:~p/~s?~s">>,
+    Value = lists:flatten(io_lib:format(<<"~s://~s:~p/~s?~s">>,
         [
             UrlInfo#dubbo_url.scheme,
             UrlInfo#dubbo_url.host,
             UrlInfo#dubbo_url.port,
             UrlInfo#dubbo_url.path,
             ParameterStr
-        ]),
+        ])),
     list_to_binary(Value).
