@@ -121,6 +121,10 @@
     side = <<"provider">>
 }).
 
+-record(invoker,{
+    url,
+    handler
+}).
 
 
 -record(interface_info, {interface, loadbalance, protocol}).

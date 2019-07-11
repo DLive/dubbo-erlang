@@ -14,17 +14,21 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%------------------------------------------------------------------------------
--module(dubbo_protocol).
+-module(dubbo_service_config).
+-author("dlive").
 
 -include("dubbo.hrl").
+%% API
+-export([export/1]).
 
--callback refer(Url::binary(),Acc::term())->ok.
+-spec(export(#provider_config{})->ok).
+export(ProviderInfo)->
+    ok.
 
--callback export(Invoker::#invoker{}) ->ok.
+do_export()->
 
-%%%% API
-%%-export([refer/2]).
-%%
-%%
-%%refer(InterfaceClassInfo,Url)->
-%%    dubbo_hooker(protocol_wapper,refer,[InterfaceClassInfo,Url]).
+    ok.
+
+do_export_protocol()->
+
+    ok.
