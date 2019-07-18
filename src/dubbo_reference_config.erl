@@ -73,7 +73,6 @@ gen_parameter(ConsumerInfo)->
         <<"release">> => <<"2.7.1">>,
         <<"timestamp">> => integer_to_binary(dubbo_time_util:timestamp_ms())
     },
-
     Para.
 
 get_appname(ConsumerInfo)->

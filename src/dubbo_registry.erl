@@ -24,7 +24,7 @@
 %% API
 -export([setup_register/1,register/2]).
 
--spec(setup_register(UrlInfo :: map()) -> {ok, RegistryProcessName :: atom()}|{error, term()}).
+-spec(setup_register(UrlInfo :: #dubbo_url{}) -> {ok, RegistryProcessName :: atom()}|{error, term()}).
 setup_register(UrlInfo) ->
     RegistryModuleName = get_registry_module(UrlInfo),
     case whereis(RegistryModuleName) of
@@ -42,7 +42,6 @@ register(RegistryName,Url) ->
 
 
 get_registry_module(Info) ->
-    io:format(user,"teset============= ~p",[Info]),
     RegistryName = Info#dubbo_url.scheme,
     FullName = << <<"dubbo_registry_">>/binary, RegistryName/binary>>,
     binary_to_existing_atom(FullName,latin1).

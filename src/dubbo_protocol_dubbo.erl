@@ -20,13 +20,14 @@
 -include("dubbo.hrl").
 
 %% API
--export([refer/2,invoke/2,data_receive/1]).
+-export([refer/2, invoke/2, data_receive/1]).
+-export([export/1]).
 
 refer(Url, Acc) ->
     {ok, UrlInfo} = dubbo_common_fun:parse_url(Url),
     case UrlInfo#dubbo_url.scheme of
         <<"dubbo">> ->
-            {ok,Invoker} = do_refer(UrlInfo),
+            {ok, Invoker} = do_refer(UrlInfo),
             {ok, Invoker};
         _ ->
             {skip, Acc}
@@ -38,9 +39,9 @@ do_refer(UrlInfo) ->
 %%            OldHostList = dubbo_provider_consumer_reg_table:get_interface_provider_node(ProviderConfig#provider_config.interface),
             case getClients(ProviderConfig) of
                 {ok, ConnectionInfoList} ->
-                    dubbo_provider_consumer_reg_table:update_node_conections(ProviderConfig#provider_config.interface,ConnectionInfoList),
+                    dubbo_provider_consumer_reg_table:update_node_conections(ProviderConfig#provider_config.interface, ConnectionInfoList),
                     HostFlag = dubbo_provider_consumer_reg_table:get_host_flag(ProviderConfig),
-                    {ok,#dubbo_invoker{host_flag = HostFlag,handle = ?MODULE}};
+                    {ok, #dubbo_invoker{host_flag = HostFlag, handle = ?MODULE}};
                 {error, Reason} ->
                     {error, Reason}
             end;
@@ -49,29 +50,31 @@ do_refer(UrlInfo) ->
             {error, R1}
     end.
 
+export(Invoker) ->
+
+    registry_provider_impl_module(),
+    service_listen_check_start(),
+    Invoker.
+
 getClients(ProviderConfig) ->
     %% @todo if connections parameter > 1, need new spec transport
     case new_transport(ProviderConfig) of
         {ok, ConnectionInfoList} ->
-%%            ConnectionList = start_provider_process(HostFlag, 30, ProviderConfig),
             {ok, ConnectionInfoList};
         {error, Reason} ->
             {error, Reason}
     end.
 
 
-%%ok = update_connection_info(ProviderConfig#provider_config.interface, HostFlag, ConnectionList, true),
-
-
 new_transport(ProviderConfig) ->
 
-    case dubbo_provider_consumer_reg_table:get_host_connections(ProviderConfig#provider_config.host,ProviderConfig#provider_config.port) of
+    case dubbo_provider_consumer_reg_table:get_host_connections(ProviderConfig#provider_config.host, ProviderConfig#provider_config.port) of
         [] ->
             case dubbo_exchanger:connect(ProviderConfig, ?MODULE) of
                 {ok, ConnectionInfo} ->
                     {ok, [ConnectionInfo]};
                 {error, Reason} ->
-                    logger:warning("start client fail ~p ~p ~p", [Reason, ProviderConfig#provider_config.host,ProviderConfig#provider_config.port]),
+                    logger:warning("start client fail ~p ~p ~p", [Reason, ProviderConfig#provider_config.host, ProviderConfig#provider_config.port]),
                     {error, Reason}
             end;
         ConnectionInfoList ->
@@ -81,13 +84,13 @@ new_transport(ProviderConfig) ->
 
 
 
-invoke(#dubbo_rpc_invocation{source_pid = CallBackPid,transport_pid = TransportPid,call_ref = Ref} = Invocation,Acc) ->
+invoke(#dubbo_rpc_invocation{source_pid = CallBackPid, transport_pid = TransportPid, call_ref = Ref} = Invocation, Acc) ->
 
 %%    Request2 = merge_attachments(Request, RpcContext), %% @todo need add rpc context to attachment
     Request = dubbo_adapter:reference(Invocation),
     {ok, RequestData} = dubbo_codec:encode_request(Request),
     gen_server:cast(TransportPid, {send_request, Ref, Request, RequestData, CallBackPid, Invocation}),
-    {ok,Invocation,Acc}.
+    {ok, Invocation, Acc}.
 %%    case is_sync(RequestState) of
 %%        true ->
 %%            sync_receive(Ref, get_timeout(RequestState));
@@ -96,7 +99,7 @@ invoke(#dubbo_rpc_invocation{source_pid = CallBackPid,transport_pid = TransportP
 
 
 
-data_receive(Data)->
+data_receive(Data) ->
     <<Header:16/binary, RestData/binary>> = Data,
     case dubbo_codec:decode_header(Header) of
         {ok, response, ResponseInfo} ->
@@ -114,7 +117,7 @@ data_receive(Data)->
 
 
 %% @doc process event
--spec process_response(IsEvent :: boolean(), #dubbo_response{},RestData::binary()) -> ok.
+-spec process_response(IsEvent :: boolean(), #dubbo_response{}, RestData :: binary()) -> ok.
 process_response(false, ResponseInfo, RestData) ->
 %%    dubbo_traffic_control:decr_count(State#state.host_flag),
 
@@ -129,7 +132,7 @@ process_response(false, ResponseInfo, RestData) ->
                 false ->
                     %% @todo rpccontent need merge response with request
                     ResponseData = dubbo_type_transfer:response_to_native(Res),
-                    dubbo_invoker:invoke_response(Invocation,ResponseData);
+                    dubbo_invoker:invoke_response(Invocation, ResponseData);
                 _ ->
                     ok
             end
@@ -148,6 +151,40 @@ process_request(true, Request) ->
 process_request(false, Request) ->
     ok.
 
-
 get_earse_request_info(Mid) ->
     erase(Mid).
+
+
+registry_provider_impl_module(Invoker)->
+
+    case dubbo_common_fun:parse_url(Invoker#invoker.url) of
+        {ok,UrlInfo} ->
+            Interface = maps:get(<<"interface">>,UrlInfo#dubbo_url.parameters),
+            ok = dubbo_provider_protocol:register_impl_provider(Interface, Invoker#invoker.handler)
+    end.
+
+
+service_listen_check_start()->
+    case application:get_env(dubboerl, protocol,{dubbo,[{port,20880}]}) of
+        {dubbo,ConfigList}->
+            Port = proplists:get_value(port,ConfigList,20880),
+            case server_is_start() of
+                true ->
+                    ok;
+                false->
+                    {ok, _} = ranch:start_listener(dubbo_provider, ranch_tcp, [{port, Port}], dubbo_provider_protocol,[]),
+                    ok
+            end;
+        _ ->
+            logger:warning("no find dubbo protocol config"),
+            fail
+    end.
+
+server_is_start()->
+    try ranch:get_protocol_options(dubbo_provider) of
+        _ ->
+            true
+    catch
+        _:_ ->
+            false
+    end

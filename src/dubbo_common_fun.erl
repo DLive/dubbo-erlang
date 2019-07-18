@@ -32,7 +32,7 @@ local_ip_v4_str() ->
     list_to_binary(io_lib:format("~p.~p.~p.~p", [V1, V2, V3, V4])).
 
 
--spec(parse_url(Url :: binary()|list()) -> {ok, #dubbo_url{}}).
+-spec(parse_url(Url :: binary()|list()) -> {ok, #dubbo_url{}}|{error,any()}).
 parse_url(Url) when is_binary(Url) ->
     parse_url(binary_to_list(Url));
 parse_url(Url) ->
@@ -78,16 +78,7 @@ parse_url_parameter([Item | Rest], Parameters) ->
 
 
 url_to_binary(UrlInfo) ->
-    ParameterStr =
-        case UrlInfo#dubbo_url.parameters of
-            undefined ->
-                "";
-            Parameter ->
-                KeyValues = maps:to_list(Parameter),
-                KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- KeyValues],
-                ParameterStr1 = string:join(KeyValues2, "&"),
-                ParameterStr1
-        end,
+    ParameterStr = format_parameter(UrlInfo#dubbo_url.parameters),
     Value = lists:flatten(io_lib:format(<<"~s://~s:~p/~s?~s">>,
         [
             UrlInfo#dubbo_url.scheme,
@@ -97,3 +88,13 @@ url_to_binary(UrlInfo) ->
             ParameterStr
         ])),
     list_to_binary(Value).
+format_parameter(undefined)->
+    "";
+format_parameter(Parameter) when is_map(Parameter)->
+    KeyValues = maps:to_list(Parameter),
+    format_parameter(KeyValues);
+format_parameter(Parameters)->
+    KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- Parameters],
+    ParameterStr1 = string:join(KeyValues2, "&"),
+    ParameterStr1.
+
