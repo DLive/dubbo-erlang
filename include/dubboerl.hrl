@@ -20,6 +20,7 @@
 
 -define(TRAFFIC_CONTROL, traffic_control).
 
+-define(SERVICE_EXPORT_TABLE,dubbo_service_export).
 
 -record(dubbo_url, {
     scheme :: binary() ,

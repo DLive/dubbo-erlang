@@ -118,7 +118,8 @@
     application,
     dubbo = <<"2.5.3">>,
     methods = [],
-    side = <<"provider">>
+    side = <<"provider">>,
+    impl_handle
 }).
 
 -record(invoker,{
@@ -130,7 +131,6 @@
 -record(interface_info, {interface, loadbalance, protocol}).
 
 -record(interface_list, {interface, pid, connection_info}).
-%%-record(provider_node_list, {host_flag, pid, weight, readonly = false}).
 -record(connection_info, {host_flag, pid, weight, readonly = false}).
 
 -type dubbo_request() :: #dubbo_request{}.

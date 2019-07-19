@@ -45,7 +45,7 @@ create_proxy(ConsumerInfo)->
 
 gen_registry_url(Para)->
     %%todo 组装para & url
-    {Host,Port} = get_registry_host_port(),
+    {Host,Port} = dubbo_registry:get_registry_host_port(),
     UrlInfo = #dubbo_url{
         scheme = <<"registry">>,
         host = list_to_binary(Host),
@@ -57,11 +57,6 @@ gen_registry_url(Para)->
 %%    Url = "registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=hello-world&dubbo=2.0.2&pid=68901&refer=application%3Dhello-world%26default.check%3Dfalse%26default.lazy%3Dfalse%26default.retries%3D0%26default.sticky%3Dfalse%26default.timeout%3D300000%26dubbo%3D2.0.2%26interface%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26lazy%3Dfalse%26methods%3DqueryUserInfo%2CqueryUserList%2CgenUserId%2CgetUserInfo%26pid%3D68901%26register.ip%3D127.0.0.1%26release%3D2.7.1%26retries%3D0%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1559727789953&registry=zookeeper&release=2.7.1&timestamp=1559727842451",
 %%    Url.
 
-get_registry_host_port()->
-    %% @todo need adapter other registry
-    RegistryList = application:get_env(dubboerl,zookeeper_list,[{"127.0.0.1",2181}]),
-    [Item|_] = RegistryList,
-    Item.
 
 gen_parameter(ConsumerInfo)->
     Para = #{
@@ -69,7 +64,7 @@ gen_parameter(ConsumerInfo)->
         <<"dubbo">> => <<"2.0.2">>,
         <<"pid">> => list_to_binary(get_pid()),
         <<"refer">> => get_refinfo(ConsumerInfo),
-        <<"registry">> => get_registry_type(),
+        <<"registry">> => dubbo_registry:get_registry_type(),
         <<"release">> => <<"2.7.1">>,
         <<"timestamp">> => integer_to_binary(dubbo_time_util:timestamp_ms())
     },
@@ -103,6 +98,4 @@ get_refinfo(ConsumerInfo)->
     list_to_binary(http_uri:encode(ParameterStr1)).
 %%    <<"application%3Dhello-world%26default.check%3Dfalse%26default.lazy%3Dfalse%26default.retries%3D0%26default.sticky%3Dfalse%26default.timeout%3D300000%26dubbo%3D2.0.2%26interface%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26lazy%3Dfalse%26methods%3DqueryUserInfo%2CqueryUserList%2CgenUserId%2CgetUserInfo%26pid%3D68901%26register.ip%3D127..0.1%26release%3D2.7.1%26retries%3D0%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1559727789953">>.
 
-get_registry_type()->
-    %%todo
-    atom_to_binary(application:get_env(dubboerl,registry,zookeeper),utf8).
+

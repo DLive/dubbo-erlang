@@ -21,7 +21,7 @@
 
 %% API
 -export([refer/2, invoke/2, data_receive/1]).
--export([export/1]).
+-export([export/2]).
 
 refer(Url, Acc) ->
     {ok, UrlInfo} = dubbo_common_fun:parse_url(Url),
@@ -50,11 +50,10 @@ do_refer(UrlInfo) ->
             {error, R1}
     end.
 
-export(Invoker) ->
-
-    registry_provider_impl_module(),
+export(Invoker,_Acc) ->
+    registry_provider_impl_module(Invoker),
     service_listen_check_start(),
-    Invoker.
+    {ok,Invoker}.
 
 getClients(ProviderConfig) ->
     %% @todo if connections parameter > 1, need new spec transport
@@ -187,4 +186,4 @@ server_is_start()->
     catch
         _:_ ->
             false
-    end
+    end.

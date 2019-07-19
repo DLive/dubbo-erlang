@@ -18,7 +18,7 @@
 
 -include("dubboerl.hrl").
 %% API
--export([local_ip_v4/0, local_ip_v4_str/0, parse_url/1, url_to_binary/1,parse_url_parameter/1]).
+-export([local_ip_v4/0, local_ip_v4_str/0, parse_url/1, url_to_binary/1,parse_url_parameter/1,binary_list_join/2]).
 
 local_ip_v4() ->
     {ok, Addrs} = inet:getifaddrs(),
@@ -97,4 +97,14 @@ format_parameter(Parameters)->
     KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- Parameters],
     ParameterStr1 = string:join(KeyValues2, "&"),
     ParameterStr1.
+
+binary_list_join([],_Separator)->
+    <<"">>;
+binary_list_join([H|T],Separator)->
+    binary_list_join1(H,T,Separator).
+
+binary_list_join1(Header,[],_Separator)->
+    Header;
+binary_list_join1(Header,[Item|Rest],Separator)->
+    binary_list_join1(<< Header/binary,Separator/binary,Item/binary >>,Rest,Separator).
 

@@ -50,6 +50,7 @@ init_default_hooks()->
     ok.
 env_init() ->
     ets:new(?PROVIDER_IMPL_TABLE, [public, named_table]),
+    ets:new(?SERVICE_EXPORT_TABLE, [public, named_table]),
     dubbo_traffic_control:init(),
     dubbo_type_register:init(),
     register_type_list().

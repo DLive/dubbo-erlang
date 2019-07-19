@@ -41,7 +41,6 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
     dubboerl_app:env_init(),
-
     %% @todo registry need move registry sup
     ZK = {dubbo_registry_zookeeper, {dubbo_registry_zookeeper, start_link, []}, transient, 5000, worker, [dubbo_registry_zookeeper]},
 
@@ -50,6 +49,7 @@ init([]) ->
     ProviderPoolSup = {dubbo_provider_worker_sup, {dubbo_provider_worker_sup, start_link, []}, transient, 5000, supervisor, [dubbo_provider_worker_sup]},
     ConsumerPoolSup = {dubbo_transport_pool_sup, {dubbo_transport_pool_sup, start_link, []}, transient, 5000, supervisor, [dubbo_transport_pool_sup]},
     ConsumerPool = {dubbo_provider_consumer_reg_table, {dubbo_provider_consumer_reg_table, start_link, []}, transient, 5000, worker, [dubbo_provider_consumer_reg_table]},
+    ShutdownSer = {dubbo_shutdown, {dubbo_shutdown, start_link, []}, transient, 10000, worker, [dubbo_shutdown]},
 %%    ListNew1 =
 %%        case application:get_env(dubboerl, registry, false) of
 %%            true ->
@@ -57,7 +57,7 @@ init([]) ->
 %%            false ->
 %%                []
 %%        end,
-    ListNew = [Id_count,ExtensionSer, ZK, ConsumerPool, ConsumerPoolSup, ProviderPoolSup],
+    ListNew = [Id_count,ExtensionSer, ZK, ConsumerPool, ConsumerPoolSup, ProviderPoolSup,ShutdownSer],
     {ok, {{one_for_one, 60, 10}, ListNew}}.
 
 %%====================================================================

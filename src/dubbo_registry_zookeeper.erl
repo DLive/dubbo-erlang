@@ -21,9 +21,9 @@
 -include("dubbo.hrl").
 -include("dubboerl.hrl").
 %% API
--export([start_link/0, register_consumer/1, register_consumer/2, register_provider/1, provider_watcher/1]).
+-export([start_link/0, register_provider/1, provider_watcher/1]).
 
--export([start/1, register/1, subscribe/2]).
+-export([start/1, register/1, unregister/1, subscribe/2]).
 %% gen_server callbacks
 -export([init/1,
     handle_call/3,
@@ -89,18 +89,15 @@ init([]) ->
     {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
     {stop, Reason :: term(), NewState :: #state{}}).
 handle_call({do_register, Url}, _From, State) ->
-    do_register(State#state.zk_pid,Url),
+    do_register(State#state.zk_pid, Url),
     {reply, ok, State};
-handle_call({add_consumer, Interface, ConsumerUrl}, _From, State) ->
-    add_consumer(Interface, ConsumerUrl, State),
-    {reply, ok, State};
-handle_call({add_provider, Provider}, _From, State) ->
-    register_provider_path(Provider, State),
+handle_call({do_unregister, Url}, _From, State) ->
+    do_unregister(State#state.zk_pid, Url),
     {reply, ok, State};
 handle_call({subscribe_provider, InterfaceName, NotifyFun}, _From, #state{zk_pid = ZkPid} = State) ->
     NewState = State#state{provider_notify_fun = NotifyFun},
     List = get_provider_list(InterfaceName, ZkPid),
-    notify_provider_change(NotifyFun,InterfaceName,List),
+    notify_provider_change(NotifyFun, InterfaceName, List),
     {reply, ok, NewState};
 
 handle_call(_Request, _From, State) ->
@@ -117,9 +114,9 @@ handle_call(_Request, _From, State) ->
     {noreply, NewState :: #state{}} |
     {noreply, NewState :: #state{}, timeout() | hibernate} |
     {stop, Reason :: term(), NewState :: #state{}}).
-handle_cast({provider_node_change, Interface, Path}, #state{zk_pid = Pid,provider_notify_fun = NotifyFun} = State) ->
+handle_cast({provider_node_change, Interface, Path}, #state{zk_pid = Pid, provider_notify_fun = NotifyFun} = State) ->
     ProviderList = get_provider_and_start(Pid, Interface, Path),
-    notify_provider_change(NotifyFun,Interface,ProviderList),
+    notify_provider_change(NotifyFun, Interface, ProviderList),
     {noreply, State};
 handle_cast(_Request, State) ->
     {noreply, State}.
@@ -156,6 +153,8 @@ handle_info(_Info, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
 terminate(_Reason, _State) ->
+    io:format(user,"zk terminate ~p",[_Reason]),
+    dubbo_shutdown:destory(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -189,37 +188,53 @@ start(Url) ->
 %%    ok.
 
 register(Url) ->
-    gen_server:call(?SERVER, {do_register,Url},10000),
+    gen_server:call(?SERVER, {do_register, Url}, 10000),
     ok.
 
+unregister(Url) ->
+    gen_server:call(?SERVER, {do_unregister, Url}, 10000),
+    ok.
 
-do_register(Pid,Url) ->
+do_register(Pid, Url) ->
     case dubbo_common_fun:parse_url(Url) of
-        {ok,UrlInfo} ->
-            CreateNodeList = [{get_register_node(Item,UrlInfo),p} || Item <- [root,service,category]],
-            UrlNode= {list_to_binary(edoc_lib:escape_uri(binary_to_list(Url))),get_dynamic(Url)},
+        {ok, UrlInfo} ->
+            CreateNodeList = [{get_register_node(Item, UrlInfo), p} || Item <- [root, service, category]],
+            UrlNode = {list_to_binary(edoc_lib:escape_uri(binary_to_list(Url))), get_dynamic(UrlInfo)},
             CreateNodeList2 = CreateNodeList ++ [UrlNode],
-            RetFullNode = check_and_create_path(Pid,<<"">>,CreateNodeList2),
-            {ok,RetFullNode};
+            RetFullNode = check_and_create_path(Pid, <<"">>, CreateNodeList2),
+            {ok, RetFullNode};
         Reason ->
-            logger:error("zk parse url fail reason ~p",[Reason]),
-            {error,Reason}
+            logger:error("zk parse url fail reason ~p", [Reason]),
+            {error, Reason}
+    end.
+do_unregister(Pid, Url) ->
+    case dubbo_common_fun:parse_url(Url) of
+        {ok, UrlInfo} ->
+            CreateNodeList = [get_register_node(Item, UrlInfo) || Item <- [root, service, category]],
+            UrlNode = list_to_binary(edoc_lib:escape_uri(binary_to_list(Url))),
+            CreateNodeList2 = CreateNodeList ++ [UrlNode],
+            Path = dubbo_common_fun:binary_list_join(CreateNodeList2, <<"/">>),
+            FullPath = << <<"/">>/binary,Path/binary>>,
+            del_path(Pid, FullPath);
+        Reason ->
+            logger:error("zk parse url fail reason ~p", [Reason]),
+            {error, Reason}
     end.
 
-get_dynamic(UrlInfo)->
-    case maps:get(<<"dynamic">>,UrlInfo#dubbo_url.parameters,<<"true">>) of
+get_dynamic(UrlInfo) ->
+    case maps:get(<<"dynamic">>, UrlInfo#dubbo_url.parameters, <<"true">>) of
         <<"true">> ->
             e;
         _ ->
             p
     end.
 
-get_register_node(root,_UrlInfo) ->
+get_register_node(root, _UrlInfo) ->
     <<"dubbo">>;
-get_register_node(service,UrlInfo)->
-    maps:get(<<"interface">>,UrlInfo#dubbo_url.parameters);
-get_register_node(category,UrlInfo)->
-    maps:get(<<"category">>,UrlInfo#dubbo_url.parameters,<<"providers">>).
+get_register_node(service, UrlInfo) ->
+    maps:get(<<"interface">>, UrlInfo#dubbo_url.parameters);
+get_register_node(category, UrlInfo) ->
+    maps:get(<<"category">>, UrlInfo#dubbo_url.parameters, <<"providers">>).
 
 
 subscribe(SubcribeUrl, NotifyFun) ->
@@ -303,14 +318,21 @@ notify_provider_change(Fun, Interface, []) ->
         parameters = #{}
     },
     UrlInfoBin = dubbo_common_fun:url_to_binary(UrlInfo),
-    Fun(Interface,[UrlInfoBin]),
+    Fun(Interface, [UrlInfoBin]),
     ok;
 notify_provider_change(Fun, Interface, List) ->
     List2 = [http_uri:decode(Item) || Item <- List],
-    Fun(Interface,List2),
+    Fun(Interface, List2),
     ok.
 
-
+del_path(Pid, Path) ->
+    case erlzk:delete(Pid, Path) of
+        ok ->
+            ok;
+        {error, Reason} ->
+            logger:warning("zookeeper registry del path error ~p path ~p", [Reason, Path]),
+            {error, Reason}
+    end.
 
 create_path(Pid, Path, CreateType) ->
     case erlzk:create(Pid, Path, CreateType) of

@@ -39,13 +39,12 @@ register(HookName, Module,Priority) ->
 unregister(HookName, Module,Priority) ->
     gen_server:call(?MODULE, {unregister, HookName, {Priority, Module}}).
 
-%% @doc run all hooks registered for the HookName.
-%% Execution can be interrupted if an hook return the atom `stop'.
 -spec run(HookName::atom(),Fun::atom(), Args::list()) -> ok.
 run(HookName,Fun, Args) ->
     case find_hooks(HookName) of
         no_hook -> ok;
-        Hooks -> run1(Hooks, HookName,Fun, Args)
+        Hooks ->
+            run1(Hooks, HookName,Fun, Args)
     end.
 
 run1([], _HookName,_Fun, _Args) ->
@@ -54,6 +53,7 @@ run1([M | Rest], HookName, Fun, Args) ->
     Ret = (catch apply(M, Fun, Args)),
     case Ret of
         {'EXIT', Reason} ->
+            io:format(user,"~p~n error running extension: ~p~n",[HookName, Reason]),
             logger:error("~p~n error running extension: ~p~n", [HookName, Reason]),
             run1(Rest, HookName,Fun, Args);
         stop ->

@@ -20,13 +20,16 @@
 -include("dubbo.hrl").
 
 %% API
--export([init/0, start_consumer/0, start_provider/0]).
+-export([stop/1,init/0, start_consumer/0, start_provider/0]).
 
 init() ->
     ok = start_consumer(),
     ok = start_provider(),
     ok.
 
+
+stop(Reason)->
+    io:format(user,"aaaa ~p~n",[Reason]).
 
 start_consumer() ->
     ConsumerList = application:get_env(dubboerl, consumer, []),
