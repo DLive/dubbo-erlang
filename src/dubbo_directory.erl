@@ -91,10 +91,14 @@ refresh_invoker(UrlList) ->
     case pick_interface(UrlList) of
         {error, Reason} ->
             fail;
-        {<<"empty">>, Interface, _} ->
+        {<<"empty">>, Interface,_} ->
+            OldProviderHosts = dubbo_provider_consumer_reg_table:get_interface_provider_node(Interface),
+            dubbo_provider_consumer_reg_table:clean_invalid_provider(OldProviderHosts),
             todo_destroy;
-        {_, Interface, LoadBalance, Protocol} ->
-            logger:info("[DUBBO] refresh invoker for interface ~p loadbalance ~p protocol ~p", [Interface, LoadBalance, Protocol]),
+        {Schame, Interface, LoadBalance} ->
+            ProtocolModule = binary_to_existing_atom(<<<<"dubbo_protocol_">>/binary, Schame/binary>>, latin1),
+
+            logger:info("[DUBBO] refresh invoker for interface ~p loadbalance ~p protocol ~p", [Interface, LoadBalance, ProtocolModule]),
             OldProviderHosts = dubbo_provider_consumer_reg_table:get_interface_provider_node(Interface),
             NewInvokers = refresh_invoker(UrlList, []),
             NewProviderHosts = [Item#dubbo_invoker.host_flag || Item <- NewInvokers],
@@ -109,13 +113,14 @@ refresh_invoker(UrlList) ->
 
 
 %%            dubbo_provider_consumer_reg_table:update_connection_info(#interface_info{interface = Interface,loadbalance = LoadBalance})
-            dubbo_provider_consumer_reg_table:update_interface_info(#interface_info{interface = Interface, loadbalance = LoadBalance, protocol = Protocol})
+            dubbo_provider_consumer_reg_table:update_interface_info(#interface_info{interface = Interface, loadbalance = LoadBalance, protocol = ProtocolModule})
     end.
 %%    OldProviderHosts =
 
 refresh_invoker([], Acc) ->
     Acc;
 refresh_invoker([Url | Rest], Acc) ->
+    logger:info("refresh invoker ~s", [Url]),
     case dubbo_extension:run_fold(protocol, refer, [Url], undefined) of
         undefined ->
             refresh_invoker(Rest, Acc);
@@ -128,11 +133,11 @@ refresh_invoker([Url | Rest], Acc) ->
 pick_interface([Url | _]) ->
     case dubbo_common_fun:parse_url(Url) of
         {ok, UrlInfo} ->
+            logger:debug("pick interface info from ~p", [Url]),
             Interface = maps:get(<<"interface">>, UrlInfo#dubbo_url.parameters),
-            ProtocolModule = binary_to_existing_atom(<<<<"dubbo_protocol_">>/binary, (UrlInfo#dubbo_url.scheme)/binary>>, latin1),
             LoadBalanceName = maps:get(<<"loadbalance">>, UrlInfo#dubbo_url.parameters, <<"random">>),
             LoadBalance = binary_to_existing_atom(<<<<"dubbo_loadbalance_">>/binary, LoadBalanceName/binary>>, latin1),
-            {UrlInfo#dubbo_url.scheme, Interface, LoadBalance, ProtocolModule};
+            {UrlInfo#dubbo_url.scheme, Interface, LoadBalance};
         {error, Reason} ->
             {error, Reason}
     end.

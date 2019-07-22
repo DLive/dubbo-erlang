@@ -361,7 +361,7 @@ process_data(Data, #state{handler = ProtocolHandle} = State) ->
         ok ->
             ok;
         {do_heartbeat, Mid} ->
-            send_heartbeat_msg(Mid, false),
+            send_heartbeat_msg(Mid, false,State),
             ok
     end,
     {ok, State}.

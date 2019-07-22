@@ -19,6 +19,8 @@
 
 -include("dubboerl.hrl").
 -include("dubbo.hrl").
+-include("constrans.hrl").
+
 
 %% API
 -export([refer/2, export/2, destroy/0]).
@@ -41,7 +43,6 @@ export(Invoker, Acc) ->
     ProtocolUrl = get_provider_url(UrlInfo),
     {ok, InterfaceKey} = do_local_export(Invoker, ProtocolUrl),
 
-
     RegistryUrlInfo = gen_registry_urlinfo(UrlInfo),
     {ok, RegistryName} = dubbo_registry:setup_register(RegistryUrlInfo),
     dubbo_registry:register(RegistryName, ProtocolUrl),
@@ -50,7 +51,6 @@ export(Invoker, Acc) ->
     {ok, Invoker}.
 
 destroy() ->
-    io:format(user, "destroy~n", []),
     List = ets:tab2list(?SERVICE_EXPORT_TABLE),
     lists:map(
         fun(Item) ->
@@ -86,18 +86,25 @@ gen_consumer_url(UrlInfo) ->
     #{<<"refer">> := Refer} = Parameters,
     Refer2 = http_uri:decode(Refer),
     Parameters2 = dubbo_common_fun:parse_url_parameter(Refer2),
-    #{<<"interface">> := Interface} = Parameters2,
+    Parameters3 = Parameters2#{
+        ?CATEGORY_KEY => ?CONSUMERS_CATEGORY
+    },
+    #{<<"interface">> := Interface} = Parameters3,
     ConsumerUrlInfo = UrlInfo#dubbo_url{
         scheme = <<"consumer">>,
         host = dubbo_common_fun:local_ip_v4_str(),
         path = Interface,
-        parameters = Parameters2
+        parameters = Parameters3
     },
     ConsumerUrl = dubbo_common_fun:url_to_binary(ConsumerUrlInfo),
     ConsumerUrl.
 get_provider_url(UrlInfo) ->
     ExportUrl = maps:get(<<"export">>, UrlInfo#dubbo_url.parameters),
-    http_uri:decode(ExportUrl).
+    ExportUrl2 = http_uri:decode(ExportUrl),
+    {ok,ExportUrlInfo} = dubbo_common_fun:parse_url(ExportUrl2),
+    ParameterNew = maps:put(?CATEGORY_KEY,?PROVIDERS_CATEGORY,ExportUrlInfo#dubbo_url.parameters),
+    ExportUrlInfoNew = ExportUrlInfo#dubbo_url{parameters = ParameterNew},
+    dubbo_common_fun:url_to_binary(ExportUrlInfoNew).
 
 gen_registry_urlinfo(UrlInfo) ->
     Parameters = UrlInfo#dubbo_url.parameters,

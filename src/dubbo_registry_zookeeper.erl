@@ -95,6 +95,7 @@ handle_call({do_unregister, Url}, _From, State) ->
     do_unregister(State#state.zk_pid, Url),
     {reply, ok, State};
 handle_call({subscribe_provider, InterfaceName, NotifyFun}, _From, #state{zk_pid = ZkPid} = State) ->
+    logger:debug("subscribe provider ~p notify fun ~p",[InterfaceName,NotifyFun]),
     NewState = State#state{provider_notify_fun = NotifyFun},
     List = get_provider_list(InterfaceName, ZkPid),
     notify_provider_change(NotifyFun, InterfaceName, List),
@@ -136,7 +137,6 @@ handle_cast(_Request, State) ->
     {noreply, NewState :: #state{}, timeout() | hibernate} |
     {stop, Reason :: term(), NewState :: #state{}}).
 handle_info(_Info, State) ->
-    logger:info("zk server recv msg:~p", [_Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -153,7 +153,6 @@ handle_info(_Info, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
 terminate(_Reason, _State) ->
-    dubbo_shutdown:destory(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -243,7 +242,7 @@ subscribe(SubcribeUrl, NotifyFun) ->
         ok ->
             ok
     catch
-        Error:Reason ->
+        _Error:Reason ->
             %%todo improve error type
             {error, Reason}
     end.
@@ -281,13 +280,11 @@ register_provider_path(Provider, State) ->
 get_provider_list(InterfaceName, ZkPid) ->
     InterfacePath = <<<<"/dubbo/">>/binary, InterfaceName/binary, <<"/providers">>/binary>>,
     ChildList = get_provider_and_start(ZkPid, InterfaceName, InterfacePath),
-%%    NotifyFun(InterfaceName, ChildList),
     ChildList.
 get_provider_and_start(Pid, Interface, Path) ->
     case erlzk:get_children(Pid, Path, spawn(dubbo_registry_zookeeper, provider_watcher, [Interface])) of
         {ok, ChildList} ->
             logger:debug("get provider list ~p", [ChildList]),
-%%            start_provider_process(Interface, ChildList),
             ChildList;
         {error, no_node} ->
             logger:warning("interface ~p provide zk node unexist", [Interface]),
@@ -314,13 +311,17 @@ notify_provider_change(Fun, Interface, []) ->
         host = <<"127.0.0.1">>,
         path = Interface,
         port = 80,
-        parameters = #{}
+        parameters = #{
+            <<"interface">> => Interface
+        }
     },
     UrlInfoBin = dubbo_common_fun:url_to_binary(UrlInfo),
+    logger:debug("notify provider change fun ~p", [Fun]),
     Fun(Interface, [UrlInfoBin]),
     ok;
 notify_provider_change(Fun, Interface, List) ->
     List2 = [http_uri:decode(Item) || Item <- List],
+    logger:debug("notify provider change fun ~p", [Fun]),
     Fun(Interface, List2),
     ok.
 
@@ -336,10 +337,10 @@ del_path(Pid, Path) ->
 create_path(Pid, Path, CreateType) ->
     case erlzk:create(Pid, Path, CreateType) of
         {ok, ActualPath} ->
-            logger:debug("[add_consumer] create zk path  success ~p", [ActualPath]),
+            logger:debug("create zk path  success ~p", [ActualPath]),
             ok;
         {error, R1} ->
-            logger:debug("[add_consumer] create zk path error ~p ~p", [Path, R1])
+            logger:debug("create zk path error ~p ~p", [Path, R1])
     end,
     ok.
 check_and_create_path(_Pid, RootPath, []) ->
@@ -351,13 +352,10 @@ check_and_create_path(Pid, RootPath, [{Item, CreateType} | Rst]) ->
         {ok, Stat} ->
             check_and_create_path(Pid, CheckPath, Rst);
         {error, no_node} ->
-            logger:debug("[add_consumer] check_and_create_path unexist no_node ~p", [CheckPath]),
+            logger:debug("check_and_create_path unexist no_node ~p", [CheckPath]),
             create_path(Pid, CheckPath, CreateType),
             check_and_create_path(Pid, CheckPath, Rst);
         {error, R1} ->
-            logger:debug("[add_consumer] check_and_create_path unexist ~p", [R1]),
+            logger:debug("check_and_create_path unexist ~p", [R1]),
             check_and_create_path(Pid, CheckPath, Rst)
     end.
-%%
-%%start_provider_process(Interface, ProviderList) ->
-%%    dubbo_provider_consumer_reg_table:start_consumer(Interface, ProviderList).

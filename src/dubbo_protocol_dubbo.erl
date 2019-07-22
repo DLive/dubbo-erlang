@@ -98,7 +98,7 @@ invoke(#dubbo_rpc_invocation{source_pid = CallBackPid, transport_pid = Transport
 
 
 
--spec(data_receive(binary()) -> ok|{do_heartbeat, Mid :: interger()}}.
+-spec(data_receive(binary()) -> ok|{do_heartbeat, Mid :: integer()}).
 data_receive(Data) ->
     <<Header:16/binary, RestData/binary>> = Data,
     case dubbo_codec:decode_header(Header) of
