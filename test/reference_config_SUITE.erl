@@ -15,7 +15,6 @@
 %% limitations under the License.
 %%------------------------------------------------------------------------------
 -module(reference_config_SUITE).
--author("dlive").
 
 %% API
 -compile(export_all).

@@ -134,14 +134,7 @@ handle_info(_Info, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
 terminate(_Reason, _State) ->
-    io:format("bbbb ~p~n",[_Reason]),
-    try
-        destroy()
-    catch
-        T:R  ->
-            io:format(user,"stop error ~p ~p ~n",[T,R])
-    end,
-
+    destroy(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -161,7 +154,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-destroy()->
+destroy() ->
     logger:info("dubbo hook shutdown event"),
-    dubbo_extension:run(protocol_wapper,destroy,[]),
+    dubbo_extension:run(protocol_wapper, destroy, []),
     ok.

@@ -53,8 +53,8 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
-start_link(ProviderConfig,Handle) ->
-    gen_server:start_link(?MODULE, [ProviderConfig,Handle], []).
+start_link(ProviderConfig, Handle) ->
+    gen_server:start_link(?MODULE, [ProviderConfig, Handle], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -74,7 +74,7 @@ start_link(ProviderConfig,Handle) ->
 -spec(init(Args :: term()) ->
     {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
     {stop, Reason :: term()} | ignore).
-init([ProviderConfig,Handle]) ->
+init([ProviderConfig, Handle]) ->
     #provider_config{host = Host, port = Port} = ProviderConfig,
     State = case open(Host, Port) of
                 {ok, Socket} ->
@@ -84,9 +84,9 @@ init([ProviderConfig,Handle]) ->
             end,
     NowStamp = dubbo_time_util:timestamp_ms(),
     HeartBeatInfo = #heartbeat{last_read = NowStamp, last_write = NowStamp},
-    logger:info("netty client start ~p ~p", [Host,Port]),
+    logger:info("netty client start ~p ~p", [Host, Port]),
     start_heartbeat_timer(HeartBeatInfo),
-    {ok, State#state{provider_config = ProviderConfig, heartbeat = HeartBeatInfo,handler = Handle}}.
+    {ok, State#state{provider_config = ProviderConfig, heartbeat = HeartBeatInfo, handler = Handle}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -230,8 +230,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-open(Host,Port) when is_binary(Host)->
-    open(binary_to_list(Host),Port);
+open(Host, Port) when is_binary(Host) ->
+    open(binary_to_list(Host), Port);
 open(Host, Port) ->
     logger:debug("will connect to provider ~p ~p", [Host, Port]),
     %
@@ -358,13 +358,13 @@ check_recv_data(<<>>, State) ->
 
 process_data(Data, #state{handler = ProtocolHandle} = State) ->
     case ProtocolHandle:data_receive(Data) of
-        ok->
+        ok ->
             ok;
-        {do_heartbeat,Mid} ->
+        {do_heartbeat, Mid} ->
             send_heartbeat_msg(Mid, false),
             ok
     end,
-    {ok,State}.
+    {ok, State}.
 
 
 

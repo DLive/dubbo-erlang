@@ -18,7 +18,7 @@
 
 -include("dubboerl.hrl").
 %% API
--export([local_ip_v4/0, local_ip_v4_str/0, parse_url/1, url_to_binary/1,parse_url_parameter/1,binary_list_join/2]).
+-export([local_ip_v4/0, local_ip_v4_str/0, parse_url/1, url_to_binary/1, parse_url_parameter/1, binary_list_join/2]).
 
 local_ip_v4() ->
     {ok, Addrs} = inet:getifaddrs(),
@@ -32,7 +32,7 @@ local_ip_v4_str() ->
     list_to_binary(io_lib:format("~p.~p.~p.~p", [V1, V2, V3, V4])).
 
 
--spec(parse_url(Url :: binary()|list()) -> {ok, #dubbo_url{}}|{error,any()}).
+-spec(parse_url(Url :: binary()|list()) -> {ok, #dubbo_url{}}|{error, any()}).
 parse_url(Url) when is_binary(Url) ->
     parse_url(binary_to_list(Url));
 parse_url(Url) ->
@@ -47,7 +47,7 @@ parse_url(Url) ->
                        end,
             Parameters = parse_url_parameter(QueryStr),
             Result = #dubbo_url{
-                scheme = atom_to_binary(Scheme,utf8),
+                scheme = atom_to_binary(Scheme, utf8),
                 host = list_to_binary(Host),
                 port = Port,
                 parameters = Parameters
@@ -60,9 +60,9 @@ parse_url(Url) ->
 
 parse_url_parameter(ParameterStr) when is_binary(ParameterStr) ->
     parse_url_parameter(binary_to_list(ParameterStr));
-parse_url_parameter(ParameterStr)->
+parse_url_parameter(ParameterStr) ->
     QueryListTmp = string:tokens(ParameterStr, "&"),
-    parse_url_parameter(QueryListTmp,#{}).
+    parse_url_parameter(QueryListTmp, #{}).
 
 parse_url_parameter([], Parameters) ->
     Parameters;
@@ -88,23 +88,23 @@ url_to_binary(UrlInfo) ->
             ParameterStr
         ])),
     list_to_binary(Value).
-format_parameter(undefined)->
+format_parameter(undefined) ->
     "";
-format_parameter(Parameter) when is_map(Parameter)->
+format_parameter(Parameter) when is_map(Parameter) ->
     KeyValues = maps:to_list(Parameter),
     format_parameter(KeyValues);
-format_parameter(Parameters)->
+format_parameter(Parameters) ->
     KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- Parameters],
     ParameterStr1 = string:join(KeyValues2, "&"),
     ParameterStr1.
 
-binary_list_join([],_Separator)->
+binary_list_join([], _Separator) ->
     <<"">>;
-binary_list_join([H|T],Separator)->
-    binary_list_join1(H,T,Separator).
+binary_list_join([H | T], Separator) ->
+    binary_list_join1(H, T, Separator).
 
-binary_list_join1(Header,[],_Separator)->
+binary_list_join1(Header, [], _Separator) ->
     Header;
-binary_list_join1(Header,[Item|Rest],Separator)->
-    binary_list_join1(<< Header/binary,Separator/binary,Item/binary >>,Rest,Separator).
+binary_list_join1(Header, [Item | Rest], Separator) ->
+    binary_list_join1(<<Header/binary, Separator/binary, Item/binary>>, Rest, Separator).
 

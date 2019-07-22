@@ -19,12 +19,12 @@
 -include("dubbo.hrl").
 -include("dubboerl.hrl").
 
--record(dubbo_interface_info,{}).
+-record(dubbo_interface_info, {}).
 
 %% API
 -export([init_reference/1]).
 
-init_reference(ConsumerInfo)->
+init_reference(ConsumerInfo) ->
 %%    InitConfigMap= #{
 %%
 %%    },
@@ -33,19 +33,19 @@ init_reference(ConsumerInfo)->
     ok.
 
 
-create_proxy(ConsumerInfo)->
+create_proxy(ConsumerInfo) ->
 
     Para = gen_parameter(ConsumerInfo),
     Url = gen_registry_url(Para),
-    ok = dubbo_extension:run_fold(protocol_wapper,refer,[Url],ok),
+    ok = dubbo_extension:run_fold(protocol_wapper, refer, [Url], ok),
     ok.
 
-    %%application=hello-world&dubbo=2.0.2&pid=68901&refer=application=hello-world&default.check=false&default.lazy=false&default.retries=0&default.sticky=false&default.timeout=300000&dubbo=2.0.2&interface=org.apache.dubbo.erlang.sample.service.facade.UserOperator&lazy=false&methods=queryUserInfo,queryUserList,genUserId,getUserInfo&pid=68901&register.ip=127.0.0.1&release=2.7.1&retries=0&side=consumer&sticky=false&timestamp=1559727789953&registry=zookeeper&release=2.7.1&timestamp=1559727842451
+%%application=hello-world&dubbo=2.0.2&pid=68901&refer=application=hello-world&default.check=false&default.lazy=false&default.retries=0&default.sticky=false&default.timeout=300000&dubbo=2.0.2&interface=org.apache.dubbo.erlang.sample.service.facade.UserOperator&lazy=false&methods=queryUserInfo,queryUserList,genUserId,getUserInfo&pid=68901&register.ip=127.0.0.1&release=2.7.1&retries=0&side=consumer&sticky=false&timestamp=1559727789953&registry=zookeeper&release=2.7.1&timestamp=1559727842451
 
 
-gen_registry_url(Para)->
+gen_registry_url(Para) ->
     %%todo 组装para & url
-    {Host,Port} = dubbo_registry:get_registry_host_port(),
+    {Host, Port} = dubbo_registry:get_registry_host_port(),
     UrlInfo = #dubbo_url{
         scheme = <<"registry">>,
         host = list_to_binary(Host),
@@ -58,7 +58,7 @@ gen_registry_url(Para)->
 %%    Url.
 
 
-gen_parameter(ConsumerInfo)->
+gen_parameter(ConsumerInfo) ->
     Para = #{
         <<"application">> => get_appname(ConsumerInfo),
         <<"dubbo">> => <<"2.0.2">>,
@@ -70,28 +70,28 @@ gen_parameter(ConsumerInfo)->
     },
     Para.
 
-get_appname(ConsumerInfo)->
+get_appname(ConsumerInfo) ->
     ConsumerInfo#consumer_config.application.
-get_pid()->
+get_pid() ->
     os:getpid().
-get_refinfo(ConsumerInfo)->
-    KeyValues=[
-        {"application",ConsumerInfo#consumer_config.application},
-        {"default.check",atom_to_list(ConsumerInfo#consumer_config.check)},
-        {"default.lazy","false"},
-        {"default.retries","0"},
-        {"default.sticky","false"},
-        {"default.timeout","300000"},
-        {"dubbo","2.0.2"},
-        {"interface",ConsumerInfo#consumer_config.interface},
-        {"lazy","false"},
-        {"methods",string:join(ConsumerInfo#consumer_config.methods,",")},
-        {"register.ip",ConsumerInfo#consumer_config.application},
-        {"release","2.7.1"},
-        {"pid",get_pid()},
-        {"side","consumer"},
-        {"sticky","false"},
-        {"timestamp",integer_to_list(dubbo_time_util:timestamp_ms())}
+get_refinfo(ConsumerInfo) ->
+    KeyValues = [
+        {"application", ConsumerInfo#consumer_config.application},
+        {"default.check", atom_to_list(ConsumerInfo#consumer_config.check)},
+        {"default.lazy", "false"},
+        {"default.retries", "0"},
+        {"default.sticky", "false"},
+        {"default.timeout", "300000"},
+        {"dubbo", "2.0.2"},
+        {"interface", ConsumerInfo#consumer_config.interface},
+        {"lazy", "false"},
+        {"methods", string:join(ConsumerInfo#consumer_config.methods, ",")},
+        {"register.ip", ConsumerInfo#consumer_config.application},
+        {"release", "2.7.1"},
+        {"pid", get_pid()},
+        {"side", "consumer"},
+        {"sticky", "false"},
+        {"timestamp", integer_to_list(dubbo_time_util:timestamp_ms())}
     ],
     KeyValues2 = [io_lib:format("~s=~s", [Key, Value]) || {Key, Value} <- KeyValues],
     ParameterStr1 = string:join(KeyValues2, "&"),

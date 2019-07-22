@@ -213,7 +213,7 @@ do_unregister(Pid, Url) ->
             UrlNode = list_to_binary(edoc_lib:escape_uri(binary_to_list(Url))),
             CreateNodeList2 = CreateNodeList ++ [UrlNode],
             Path = dubbo_common_fun:binary_list_join(CreateNodeList2, <<"/">>),
-            FullPath = << <<"/">>/binary,Path/binary>>,
+            FullPath = <<<<"/">>/binary, Path/binary>>,
             del_path(Pid, FullPath);
         Reason ->
             logger:error("zk parse url fail reason ~p", [Reason]),

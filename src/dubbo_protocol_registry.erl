@@ -39,29 +39,29 @@ export(Invoker, Acc) ->
     {ok, UrlInfo} = dubbo_common_fun:parse_url(Invoker#invoker.url),
     %% url = registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=hello-world&dubbo=2.0.2&export=dubbo%3A%2F%2F192.168.1.5%3A20880%2Forg.apache.dubbo.erlang.sample.service.facade.UserOperator%3Fanyhost%3Dtrue%26application%3Dhello-world%26bean.name%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26bind.ip%3D192.168.1.5%26bind.port%3D20880%26default.deprecated%3Dfalse%26default.dynamic%3Dfalse%26default.register%3Dtrue%26deprecated%3Dfalse%26dubbo%3D2.0.2%26dynamic%3Dfalse%26generic%3Dfalse%26interface%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26methods%3DqueryUserInfo%2CqueryUserList%2CgenUserId%2CgetUserInfo%26pid%3D11272%26register%3Dtrue%26release%3D2.7.1%26side%3Dprovider%26timestamp%3D1563110211090&pid=11272&registry=zookeeper&release=2.7.1&timestamp=1563110211064
     ProtocolUrl = get_provider_url(UrlInfo),
-    {ok,InterfaceKey} = do_local_export(Invoker, ProtocolUrl),
+    {ok, InterfaceKey} = do_local_export(Invoker, ProtocolUrl),
 
 
     RegistryUrlInfo = gen_registry_urlinfo(UrlInfo),
     {ok, RegistryName} = dubbo_registry:setup_register(RegistryUrlInfo),
     dubbo_registry:register(RegistryName, ProtocolUrl),
 
-    register_export_info(ProtocolUrl,RegistryName,InterfaceKey),
+    register_export_info(ProtocolUrl, RegistryName, InterfaceKey),
     {ok, Invoker}.
 
 destroy() ->
-    io:format(user,"destroy~n",[]),
+    io:format(user, "destroy~n", []),
     List = ets:tab2list(?SERVICE_EXPORT_TABLE),
     lists:map(
         fun(Item) ->
 
-            {ProtocolUrl, RegistryModule,_} = Item,
+            {ProtocolUrl, RegistryModule, _} = Item,
             io:format(user, "destroy url ~p~n", [ProtocolUrl]),
-            unexport(RegistryModule,ProtocolUrl)
+            unexport(RegistryModule, ProtocolUrl)
         end, List),
     ok.
 
-unexport(RegistryModule,Url) ->
+unexport(RegistryModule, Url) ->
     dubbo_registry:unregister(RegistryModule, Url),
     ok.
 
@@ -74,10 +74,10 @@ do_local_export(Invoker, Url) ->
 
     InterfaceKey = maps:get(<<"interface">>, UrlInfo#dubbo_url.parameters),
 
-    {ok,InterfaceKey}.
+    {ok, InterfaceKey}.
 
-register_export_info(ProtocolUrl,RegistryModule,InterfaceKey) ->
-    ets:insert(?SERVICE_EXPORT_TABLE, {ProtocolUrl, RegistryModule,InterfaceKey}),
+register_export_info(ProtocolUrl, RegistryModule, InterfaceKey) ->
+    ets:insert(?SERVICE_EXPORT_TABLE, {ProtocolUrl, RegistryModule, InterfaceKey}),
     ok.
 
 

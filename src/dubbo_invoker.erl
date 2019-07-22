@@ -22,7 +22,7 @@
 
 
 %% API
--export([invoke_request/2, invoke_request/3, invoke_request/5,invoke_response/2]).
+-export([invoke_request/2, invoke_request/3, invoke_request/5, invoke_response/2]).
 
 -spec invoke_request(Interface :: binary(), Request :: #dubbo_request{}) ->
     {ok, reference()}|
@@ -36,7 +36,7 @@ invoke_request(Interface, Request) ->
     {ok, reference(), Data :: any(), RpcContent :: list()}|
     {error, Reason :: timeout|no_provider|any()}.
 invoke_request(Interface, Request, RequestOption) ->
-    invoke_request(Interface,Request,RequestOption,self()).
+    invoke_request(Interface, Request, RequestOption, self()).
 %%    invoke_request(Interface, Request, maps:get(ctx, RequestOption, []), RequestOption, self()).
 
 
@@ -79,13 +79,13 @@ invoke_request(Interface, Request, RequestOption, CallBackPid) ->
                 reference_ops = ReferenceConfig,
                 source_pid = CallBackPid
             },
-            Result = dubbo_extension:invoke(filter, invoke, [Invocation], {ok,Ref}, [Protocol]),
+            Result = dubbo_extension:invoke(filter, invoke, [Invocation], {ok, Ref}, [Protocol]),
             Result
     end.
 
-invoke_response(Invocation,Result)->
+invoke_response(Invocation, Result) ->
     Result2 = dubbo_extension:invoke_foldr(filter, do_response, [Invocation], Result),
-    gen_server:cast(Invocation#dubbo_rpc_invocation.source_pid, {response_process,Invocation#dubbo_rpc_invocation.call_ref, Invocation#dubbo_rpc_invocation.attachments, Result2                            }),
+    gen_server:cast(Invocation#dubbo_rpc_invocation.source_pid, {response_process, Invocation#dubbo_rpc_invocation.call_ref, Invocation#dubbo_rpc_invocation.attachments, Result2}),
     ok.
 
 is_sync(Option) ->

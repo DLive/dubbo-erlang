@@ -29,15 +29,15 @@
     terminate/2,
     code_change/3]).
 
--export([update_consumer_connections/2,update_node_conections/2,query_node_connections/1,get_interface_provider_node/1,get_host_connections/2, select_connection/1,
-    update_connection_readonly/2, get_host_flag/1, get_host_flag/2,clean_invalid_provider/1,update_interface_info/1,get_interface_info/1]).
+-export([update_consumer_connections/2, update_node_conections/2, query_node_connections/1, get_interface_provider_node/1, get_host_connections/2, select_connection/1,
+    update_connection_readonly/2, get_host_flag/1, get_host_flag/2, clean_invalid_provider/1, update_interface_info/1, get_interface_info/1]).
 
 -include("dubbo.hrl").
 -define(SERVER, ?MODULE).
 
 -define(INTERFCE_LIST_TABLE, interface_list).
 
--define(INTERFACE_INFO_TABLE,dubbo_interface_info).
+-define(INTERFACE_INFO_TABLE, dubbo_interface_info).
 
 -define(PROVIDER_NODE_LIST_TABLE, provider_node_list).
 
@@ -206,15 +206,15 @@ get_host_connections(Host, Port) ->
 
 
 
-update_interface_info(InterfaceInfo)->
-    ets:insert(?INTERFACE_INFO_TABLE,InterfaceInfo).
+update_interface_info(InterfaceInfo) ->
+    ets:insert(?INTERFACE_INFO_TABLE, InterfaceInfo).
 
 
 get_interface_info(Interface) ->
-    case ets:lookup(?INTERFACE_INFO_TABLE,Interface) of
+    case ets:lookup(?INTERFACE_INFO_TABLE, Interface) of
         [] ->
             undefined;
-        [Result]->
+        [Result] ->
             Result
     end.
 
@@ -258,11 +258,11 @@ get_interface_info(Interface) ->
 %%    ConnectionList.
 
 
-update_node_conections(Interface,Connections)->
+update_node_conections(Interface, Connections) ->
     lists:map(
         fun(Item) ->
             HostFlag = Item#connection_info.host_flag,
-            case ets:match_object(?PROVIDER_NODE_LIST_TABLE,#connection_info{host_flag = HostFlag,pid = Item#connection_info.pid,_="_"}) of
+            case ets:match_object(?PROVIDER_NODE_LIST_TABLE, #connection_info{host_flag = HostFlag, pid = Item#connection_info.pid, _ = "_"}) of
                 [] ->
                     I2 = ets:insert(?PROVIDER_NODE_LIST_TABLE, Item),
                     logger:debug("update_node_conections insert one record ~p result:~p", [HostFlag, I2]);
@@ -273,8 +273,8 @@ update_node_conections(Interface,Connections)->
         end, Connections),
     ok.
 
-query_node_connections(Hostflag)->
-    ets:lookup(?PROVIDER_NODE_LIST_TABLE,Hostflag).
+query_node_connections(Hostflag) ->
+    ets:lookup(?PROVIDER_NODE_LIST_TABLE, Hostflag).
 
 update_consumer_connections(Interface, Connections) ->
     lists:map(
@@ -316,16 +316,10 @@ get_interface_provider_node(Interface) ->
     end.
 
 select_connection(Interface) ->
-%%    RandNum = rand:uniform(2048),
-%%    select_connection(Interface, RandNum).
-%%select_connection(Interface, RandNum) ->
     case ets:lookup(?INTERFCE_LIST_TABLE, Interface) of
         [] ->
             {error, none};
         List ->
-%%            Len = length(List),
-%%            RemNum = (RandNum rem Len) + 1,
-%%            InterfaceListItem = lists:nth(RemNum, List),
             Ret = [Item#interface_list.connection_info || Item <- List],
             {ok, Ret}
     end.

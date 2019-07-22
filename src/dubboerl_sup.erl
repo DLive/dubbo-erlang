@@ -57,7 +57,7 @@ init([]) ->
 %%            false ->
 %%                []
 %%        end,
-    ListNew = [Id_count,ExtensionSer, ZK, ConsumerPool, ConsumerPoolSup, ProviderPoolSup,ShutdownSer],
+    ListNew = [Id_count, ExtensionSer, ZK, ConsumerPool, ConsumerPoolSup, ProviderPoolSup, ShutdownSer],
     {ok, {{one_for_one, 60, 10}, ListNew}}.
 
 %%====================================================================

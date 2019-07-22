@@ -59,8 +59,8 @@ start_link(Ref, Socket, Transport, Opts) ->
 %init([]) -> {ok, undefined}.
 
 init({Ref, Socket, Transport, _Opts}) ->
-    {ok,{IP,Port}} = inet:peername(Socket),
-    logger:info("consumer ~p:~p connect the server",[IP,Port]),
+    {ok, {IP, Port}} = inet:peername(Socket),
+    logger:info("consumer ~p:~p connect the server", [IP, Port]),
     ok = ranch:accept_ack(Ref),
 
     ok = Transport:setopts(Socket, [{active, true}, {packet, 0}]),

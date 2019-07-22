@@ -15,7 +15,6 @@
 %% limitations under the License.
 %%------------------------------------------------------------------------------
 -module(dubbo_consumer_pool_tests).
--author("dlive").
 
 -include_lib("eunit/include/eunit.hrl").
 -include("dubbo.hrl").

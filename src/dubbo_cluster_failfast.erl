@@ -19,15 +19,15 @@
 
 -include("dubbo.hrl").
 %% API
--export([invoke/2,do_response/2]).
+-export([invoke/2, do_response/2]).
 
 
-invoke(#dubbo_rpc_invocation{className = Interface, loadbalance = LoadBalance} = Invocation,Acc) ->
+invoke(#dubbo_rpc_invocation{className = Interface, loadbalance = LoadBalance} = Invocation, Acc) ->
     case dubbo_provider_consumer_reg_table:select_connection(Invocation#dubbo_rpc_invocation.className) of
         {ok, List} ->
-            Connection = loadbalance_select(LoadBalance,List),
-            #connection_info{pid = Pid, host_flag = HostFlag} =Connection,
-            {ok,Invocation#dubbo_rpc_invocation{transport_pid = Pid},Acc};
+            Connection = loadbalance_select(LoadBalance, List),
+            #connection_info{pid = Pid, host_flag = HostFlag} = Connection,
+            {ok, Invocation#dubbo_rpc_invocation{transport_pid = Pid}, Acc};
 %%            case dubbo_traffic_control:check_goon(HostFlag, 199) of
 %%                ok ->
 %%
@@ -49,9 +49,9 @@ invoke(#dubbo_rpc_invocation{className = Interface, loadbalance = LoadBalance} =
             {stop, no_provider}
     end.
 
-loadbalance_select(LoadBalance,ConnectionList)->
+loadbalance_select(LoadBalance, ConnectionList) ->
     Connection = LoadBalance:select(ConnectionList),
     Connection.
 
-do_response(Invocation,Result)->
-    {ok,Invocation,Result}.
+do_response(Invocation, Result) ->
+    {ok, Invocation, Result}.

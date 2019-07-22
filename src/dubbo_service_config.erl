@@ -21,27 +21,26 @@
 %% API
 -export([export/1]).
 
--spec(export(#provider_config{})->ok).
-export(ProviderInfo)->
+-spec(export(#provider_config{}) -> ok).
+export(ProviderInfo) ->
     do_export(ProviderInfo),
     ok.
 
-do_export(ProviderInfo)->
+do_export(ProviderInfo) ->
     do_export_protocol(ProviderInfo),
     ok.
 
-do_export_protocol(ProviderInfo)->
+do_export_protocol(ProviderInfo) ->
     Url = get_registry_url(ProviderInfo),
-    Invoker = #invoker{url = Url,handler = ProviderInfo#provider_config.impl_handle},
-    dubbo_extension:run_fold(protocol_wapper,export,[Invoker],ok),
+    Invoker = #invoker{url = Url, handler = ProviderInfo#provider_config.impl_handle},
+    dubbo_extension:run_fold(protocol_wapper, export, [Invoker], ok),
     ok.
 
 
 
 
-get_registry_url(ProviderInfo)->
-    %% zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=hello-world&dubbo=2.0.2&export=dubbo%3A%2F%2F127.0.0.1%3A20880%2Forg.apache.dubbo.erlang.sample.service.facade.UserOperator%3Fanyhost%3Dtrue%26application%3Dhello-world%26bean.name%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26bind.ip%3D127.0.0.1%26bind.port%3D20880%26default.deprecated%3Dfalse%26default.dynamic%3Dfalse%26default.register%3Dtrue%26deprecated%3Dfalse%26dubbo%3D2.0.2%26dynamic%3Dfalse%26generic%3Dfalse%26interface%3Dorg.apache.dubbo.erlang.sample.service.facade.UserOperator%26methods%3DqueryUserInfo%2CqueryUserList%2CgenUserId%2CgetUserInfo%26pid%3D90956%26register%3Dtrue%26release%3D2.7.1%26side%3Dprovider%26timestamp%3D1562725983984&pid=90956&release=2.7.1&timestamp=1562725983974
-    {Host,Port} = dubbo_registry:get_registry_host_port(),
+get_registry_url(ProviderInfo) ->
+    {Host, Port} = dubbo_registry:get_registry_host_port(),
     UrlInfo = #dubbo_url{
         scheme = <<"registry">>,
         host = list_to_binary(Host),
@@ -51,7 +50,7 @@ get_registry_url(ProviderInfo)->
     },
     dubbo_common_fun:url_to_binary(UrlInfo).
 
-gen_registry_parameter(ProviderInfo)->
+gen_registry_parameter(ProviderInfo) ->
     Para = #{
         <<"application">> => ProviderInfo#provider_config.application,
         <<"dubbo">> => <<"2.0.2">>,
@@ -63,7 +62,7 @@ gen_registry_parameter(ProviderInfo)->
     },
     Para.
 
-get_export_info(ProviderInfo)->
+get_export_info(ProviderInfo) ->
     %%dubbo://127.0.0.1:20880/org.apache.dubbo.erlang.sample.service.facade.UserOperator?
     %% anyhost=true&
     %% application=hello-world&
@@ -73,25 +72,25 @@ get_export_info(ProviderInfo)->
     %% dynamic=false&generic=false&
     %% interface=org.apache.dubbo.erlang.sample.service.facade.UserOperator&
     %% methods=queryUserInfo,queryUserList,genUserId,getUserInfo&pid=90956&register=true&release=2.7.1&side=provider&timestamp=1562725983984
-    Para =[
-        {"anyhost","true"},
-        {"application",ProviderInfo#provider_config.application},
-        {"bean.name",ProviderInfo#provider_config.interface},
-        {"bind.ip",dubbo_common_fun:local_ip_v4_str()},
-        {"bind.port",integer_to_list(ProviderInfo#provider_config.port)},
-        {"default.deprecated","false"},
-        {"default.dynamic","false"},
-        {"default.register","true"},
-        {"deprecated","false"},
-        {"dynamic","false"},
-        {"generic","false"},
-        {"interface",ProviderInfo#provider_config.interface},
-        {"methods",format_methods_str(ProviderInfo#provider_config.methods)},
-        {"pid",os:getpid()},
-        {"register","true"},
-        {"release","2.7.1"},
-        {"side","provider"},
-        {"timestamp",integer_to_list(dubbo_time_util:timestamp_ms())}
+    Para = [
+        {"anyhost", "true"},
+        {"application", ProviderInfo#provider_config.application},
+        {"bean.name", ProviderInfo#provider_config.interface},
+        {"bind.ip", dubbo_common_fun:local_ip_v4_str()},
+        {"bind.port", integer_to_list(ProviderInfo#provider_config.port)},
+        {"default.deprecated", "false"},
+        {"default.dynamic", "false"},
+        {"default.register", "true"},
+        {"deprecated", "false"},
+        {"dynamic", "false"},
+        {"generic", "false"},
+        {"interface", ProviderInfo#provider_config.interface},
+        {"methods", format_methods_str(ProviderInfo#provider_config.methods)},
+        {"pid", os:getpid()},
+        {"register", "true"},
+        {"release", "2.7.1"},
+        {"side", "provider"},
+        {"timestamp", integer_to_list(dubbo_time_util:timestamp_ms())}
     ],
     UrlInfo = #dubbo_url{
         scheme = ProviderInfo#provider_config.protocol,
@@ -103,6 +102,6 @@ get_export_info(ProviderInfo)->
     Url = dubbo_common_fun:url_to_binary(UrlInfo),
     list_to_binary(http_uri:encode(binary_to_list(Url))).
 
-format_methods_str(Methods)->
-    Methods2= [binary_to_list(Item) || Item <- Methods],
-    string:join(Methods2,",").
+format_methods_str(Methods) ->
+    Methods2 = [binary_to_list(Item) || Item <- Methods],
+    string:join(Methods2, ",").

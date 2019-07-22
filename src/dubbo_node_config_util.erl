@@ -21,13 +21,13 @@
 %% API
 -export([parse_provider_info/1, gen_provider_info/1]).
 
-parse_provider_info(#dubbo_url{scheme = Scheme, host = Host, port = Port,parameters = Parameters})->
+parse_provider_info(#dubbo_url{scheme = Scheme, host = Host, port = Port, parameters = Parameters}) ->
     ProviderInfo = #provider_config{protocol = Scheme, host = Host, port = Port},
     maps:to_list(Parameters),
     ProviderConfig = maps:fold(
-        fun(K,V,Acc1)->
-            parse_parameter(K,V,Acc1)
-        end,ProviderInfo,Parameters),
+        fun(K, V, Acc1) ->
+            parse_parameter(K, V, Acc1)
+        end, ProviderInfo, Parameters),
     logger:debug("parse provider,result: ~p", [ProviderConfig]),
     {ok, ProviderConfig}.
 
@@ -44,7 +44,7 @@ parse_parameter([Item | Rest], Config) ->
             parse_parameter(Rest, Config)
     end.
 parse_parameter(<<"anyhost">>, Value, Config) ->
-    Config#provider_config{anyhost = binary_to_existing_atom(Value,latin1)};
+    Config#provider_config{anyhost = binary_to_existing_atom(Value, latin1)};
 parse_parameter(<<"application">>, Value, Config) ->
     Config#provider_config{application = Value};
 parse_parameter(<<"dubbo">>, Value, Config) ->
@@ -54,7 +54,7 @@ parse_parameter(<<"executes">>, Value, Config) ->
 parse_parameter(<<"interface">>, Value, Config) ->
     Config#provider_config{interface = Value};
 parse_parameter(<<"methods">>, Value, Config) ->
-    MethodList = binary:split(Value,<<",">>,[global,trim_all]),
+    MethodList = binary:split(Value, <<",">>, [global, trim_all]),
     Config#provider_config{methods = MethodList};
 parse_parameter(<<"side">>, Value, Config) ->
     Config#provider_config{side = Value};

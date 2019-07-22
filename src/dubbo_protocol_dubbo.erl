@@ -50,10 +50,10 @@ do_refer(UrlInfo) ->
             {error, R1}
     end.
 
-export(Invoker,_Acc) ->
+export(Invoker, _Acc) ->
     registry_provider_impl_module(Invoker),
     service_listen_check_start(),
-    {ok,Invoker}.
+    {ok, Invoker}.
 
 getClients(ProviderConfig) ->
     %% @todo if connections parameter > 1, need new spec transport
@@ -98,7 +98,7 @@ invoke(#dubbo_rpc_invocation{source_pid = CallBackPid, transport_pid = Transport
 
 
 
--spec(data_receive(binary())-> ok|{do_heartbeat,Mid::interger()}}.
+-spec(data_receive(binary()) -> ok|{do_heartbeat, Mid :: interger()}}.
 data_receive(Data) ->
     <<Header:16/binary, RestData/binary>> = Data,
     case dubbo_codec:decode_header(Header) of
@@ -143,7 +143,7 @@ process_request(true, #dubbo_request{data = <<"R">>}) ->
     {ok, _} = dubbo_provider_consumer_reg_table:update_connection_readonly(self(), true),
     ok;
 process_request(true, Request) ->
-    {do_heartbeat,Request#dubbo_request.mid};
+    {do_heartbeat, Request#dubbo_request.mid};
 process_request(false, Request) ->
     ok.
 
@@ -151,24 +151,24 @@ get_earse_request_info(Mid) ->
     erase(Mid).
 
 
-registry_provider_impl_module(Invoker)->
+registry_provider_impl_module(Invoker) ->
 
     case dubbo_common_fun:parse_url(Invoker#invoker.url) of
-        {ok,UrlInfo} ->
-            Interface = maps:get(<<"interface">>,UrlInfo#dubbo_url.parameters),
+        {ok, UrlInfo} ->
+            Interface = maps:get(<<"interface">>, UrlInfo#dubbo_url.parameters),
             ok = dubbo_provider_protocol:register_impl_provider(Interface, Invoker#invoker.handler)
     end.
 
 
-service_listen_check_start()->
-    case application:get_env(dubboerl, protocol,{dubbo,[{port,20880}]}) of
-        {dubbo,ConfigList}->
-            Port = proplists:get_value(port,ConfigList,20880),
+service_listen_check_start() ->
+    case application:get_env(dubboerl, protocol, {dubbo, [{port, 20880}]}) of
+        {dubbo, ConfigList} ->
+            Port = proplists:get_value(port, ConfigList, 20880),
             case server_is_start() of
                 true ->
                     ok;
-                false->
-                    {ok, _} = ranch:start_listener(dubbo_provider, ranch_tcp, [{port, Port}], dubbo_provider_protocol,[]),
+                false ->
+                    {ok, _} = ranch:start_listener(dubbo_provider, ranch_tcp, [{port, Port}], dubbo_provider_protocol, []),
                     ok
             end;
         _ ->
@@ -176,7 +176,7 @@ service_listen_check_start()->
             fail
     end.
 
-server_is_start()->
+server_is_start() ->
     try ranch:get_protocol_options(dubbo_provider) of
         _ ->
             true
