@@ -153,7 +153,6 @@ handle_info(_Info, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
 terminate(_Reason, _State) ->
-    io:format(user,"zk terminate ~p",[_Reason]),
     dubbo_shutdown:destory(),
     ok.
 

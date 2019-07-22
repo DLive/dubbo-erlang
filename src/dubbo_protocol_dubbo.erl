@@ -98,17 +98,16 @@ invoke(#dubbo_rpc_invocation{source_pid = CallBackPid, transport_pid = Transport
 
 
 
+-spec(data_receive(binary())-> ok|{do_heartbeat,Mid::interger()}}.
 data_receive(Data) ->
     <<Header:16/binary, RestData/binary>> = Data,
     case dubbo_codec:decode_header(Header) of
         {ok, response, ResponseInfo} ->
-            process_response(ResponseInfo#dubbo_response.is_event, ResponseInfo, RestData),
-            ok;
+            process_response(ResponseInfo#dubbo_response.is_event, ResponseInfo, RestData);
         {ok, request, RequestInfo} ->
             {ok, Req} = dubbo_codec:decode_request(RequestInfo, RestData),
             logger:info("get one request mid ~p, is_event ~p", [Req#dubbo_request.mid, Req#dubbo_request.is_event]),
-            process_request(Req#dubbo_request.is_event, Req),
-            ok;
+            process_request(Req#dubbo_request.is_event, Req);
         {error, Type, RelData} ->
             logger:error("process_data error type ~p RelData ~p", [Type, RelData]),
             ok
@@ -144,9 +143,7 @@ process_request(true, #dubbo_request{data = <<"R">>}) ->
     {ok, _} = dubbo_provider_consumer_reg_table:update_connection_readonly(self(), true),
     ok;
 process_request(true, Request) ->
-    %% @todo send heartbeat
-%%    send_heartbeat_msg(Request#dubbo_request.mid, false),
-    ok;
+    {do_heartbeat,Request#dubbo_request.mid};
 process_request(false, Request) ->
     ok.
 

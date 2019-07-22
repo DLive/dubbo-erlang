@@ -20,16 +20,13 @@
 -include("dubbo.hrl").
 
 %% API
--export([stop/1,init/0, start_consumer/0, start_provider/0]).
+-export([init/0, start_consumer/0, start_provider/0]).
 
 init() ->
     ok = start_consumer(),
     ok = start_provider(),
     ok.
 
-
-stop(Reason)->
-    io:format(user,"aaaa ~p~n",[Reason]).
 
 start_consumer() ->
     ConsumerList = application:get_env(dubboerl, consumer, []),
@@ -45,21 +42,15 @@ start_provider() ->
     ProviderList = application:get_env(dubboerl, provider, []),
     ApplicationName = application:get_env(dubboerl, application, <<"defaultApplication">>),
     DubboServerPort = application:get_env(dubboerl, port, ?DUBBO_DEFAULT_PORT),
-    start_provider_listen(DubboServerPort),
-    lists:map(fun({ImplModuleName, BehaviourModuleName, Interface, Option}) ->
-        ok = dubbo_provider_protocol:register_impl_provider(Interface, ImplModuleName),
-        MethodList = apply(BehaviourModuleName, get_method_999_list, []),
-        ProviderInfo = dubbo_config_util:gen_provider(ApplicationName, DubboServerPort, Interface, MethodList, Option),
-        dubbo_zookeeper:register_provider(ProviderInfo),
-        logger:info("register provider success ~p ~p", [ImplModuleName, Interface])
-              end, ProviderList),
-    ok.
 
-start_provider_listen(Port) ->
-    {ok, _} = ranch:start_listener(tcp_reverse,
-        ranch_tcp, [{port, Port}], dubbo_provider_protocol, []),
+    lists:map(
+        fun({ImplModuleName, BehaviourModuleName, Interface, Option}) ->
+            MethodList = apply(BehaviourModuleName, get_method_999_list, []),
+            ProviderInfo = dubbo_config_util:gen_provider(ApplicationName, DubboServerPort, Interface, MethodList, Option),
+            dubbo_service_config:export(ProviderInfo),
+            logger:info("register provider success ~p ~p", [ImplModuleName, Interface])
+        end, ProviderList),
     ok.
-
 
 
 

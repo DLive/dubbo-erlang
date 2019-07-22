@@ -357,7 +357,13 @@ check_recv_data(<<>>, State) ->
 
 
 process_data(Data, #state{handler = ProtocolHandle} = State) ->
-    ProtocolHandle:data_receive(Data),
+    case ProtocolHandle:data_receive(Data) of
+        ok->
+            ok;
+        {do_heartbeat,Mid} ->
+            send_heartbeat_msg(Mid, false),
+            ok
+    end,
     {ok,State}.
 
 
