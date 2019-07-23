@@ -160,7 +160,7 @@ handle_info({tcp, _Port, Data}, #state{recv_buffer = RecvBuffer} = State) ->
 %%    logger:debug("[INFO] recv one data ~w",[Data]),
     {ok, NextBuffer, NewState} = case check_recv_data(<<RecvBuffer/binary, Data/binary>>, State) of
                                      {next_buffer, NextBuffer2, State3} ->
-                                         logger:debug("[INFO] recv one data state wait next_buffer"),
+                                         logger:debug("recv one data state wait next_buffer"),
                                          {ok, NextBuffer2, State3}
                                  end,
 %%    HeartbeatInfo =update_heartbeat(write,NewState#state.heartbeat),

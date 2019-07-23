@@ -80,10 +80,7 @@ notify(Interface, []) ->
     logger:info("[DUBBO] directory get notify, interface provider list is empty"),
     ok;
 notify(Interface, UrlList) ->
-    %% @todo if UrlList size is 1, and protocol is empty ,need destroyAllInvokers
-
     refresh_invoker(UrlList),
-%%    dubbo_consumer_pool:start_consumer(Interface, UrlList),
     ok.
 
 

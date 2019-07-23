@@ -50,7 +50,6 @@ java_to_native(#list{values = ForeignData} = Data, State) ->
     ForeignDataNew = [java_to_native(ValueItem, State) || ValueItem <- ForeignData],
     ForeignDataNew;
 java_to_native(Data, _) ->
-    logger:debug("java_to_native unkonw type ~p", [Data]),
     Data.
 
 get_deftype(ForeignType) ->
