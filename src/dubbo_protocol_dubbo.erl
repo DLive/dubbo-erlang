@@ -52,7 +52,7 @@ do_refer(UrlInfo) ->
 
 export(Invoker, _Acc) ->
     registry_provider_impl_module(Invoker),
-    service_listen_check_start(),
+    ok = service_listen_check_start(Invoker#invoker.url),
     {ok, Invoker}.
 
 getClients(ProviderConfig) ->
@@ -160,10 +160,9 @@ registry_provider_impl_module(Invoker) ->
     end.
 
 
-service_listen_check_start() ->
-    case application:get_env(dubboerl, protocol, {dubbo, [{port, 20880}]}) of
-        {dubbo, ConfigList} ->
-            Port = proplists:get_value(port, ConfigList, 20880),
+service_listen_check_start(Url) ->
+    case dubbo_common_fun:parse_url(Url) of
+        {ok,#dubbo_url{port = Port}} ->
             case server_is_start() of
                 true ->
                     ok;
@@ -171,9 +170,8 @@ service_listen_check_start() ->
                     {ok, _} = ranch:start_listener(dubbo_provider, ranch_tcp, [{port, Port}], dubbo_provider_protocol, []),
                     ok
             end;
-        _ ->
-            logger:warning("no find dubbo protocol config"),
-            fail
+        {error,Reason} ->
+            {error,Reason}
     end.
 
 server_is_start() ->

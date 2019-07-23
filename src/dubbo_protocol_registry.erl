@@ -104,6 +104,7 @@ get_provider_url(UrlInfo) ->
     {ok,ExportUrlInfo} = dubbo_common_fun:parse_url(ExportUrl2),
     ParameterNew = maps:put(?CATEGORY_KEY,?PROVIDERS_CATEGORY,ExportUrlInfo#dubbo_url.parameters),
     ExportUrlInfoNew = ExportUrlInfo#dubbo_url{parameters = ParameterNew},
+    logger:debug("registry gen provider url info ~p",[ExportUrlInfoNew]),
     dubbo_common_fun:url_to_binary(ExportUrlInfoNew).
 
 gen_registry_urlinfo(UrlInfo) ->

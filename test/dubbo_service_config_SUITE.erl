@@ -110,6 +110,6 @@ all() ->
 
 export_interface(_Config) ->
     MethodList = apply(userOperator, get_method_999_list, []),
-    ProviderInfo = dubbo_config_util:gen_provider(<<"test-application">>, 20880, <<"org.apache.dubbo.erlang.sample.service.facade.UserOperator">>, MethodList, []),
+    ProviderInfo = dubbo_config_util:gen_provider(<<"test-application">>, 20880, <<"org.apache.dubbo.erlang.sample.service.facade.UserOperator">>, MethodList, dubbo_service_user_impl, []),
     dubbo_service_config:export(ProviderInfo),
     ok.

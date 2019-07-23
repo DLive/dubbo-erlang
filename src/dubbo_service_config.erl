@@ -23,6 +23,7 @@
 
 -spec(export(#provider_config{}) -> ok).
 export(ProviderInfo) ->
+    logger:debug("will export provider info ~p", [ProviderInfo]),
     do_export(ProviderInfo),
     ok.
 
@@ -32,6 +33,7 @@ do_export(ProviderInfo) ->
 
 do_export_protocol(ProviderInfo) ->
     Url = get_registry_url(ProviderInfo),
+    logger:debug("do export protocol for url ~p", [Url]),
     Invoker = #invoker{url = Url, handler = ProviderInfo#provider_config.impl_handle},
     dubbo_extension:run_fold(protocol_wapper, export, [Invoker], ok),
     ok.
@@ -90,6 +92,7 @@ get_export_info(ProviderInfo) ->
         {"register", "true"},
         {"release", "2.7.1"},
         {"side", "provider"},
+        {"dubbo", "2.0.2"},
         {"timestamp", integer_to_list(dubbo_time_util:timestamp_ms())}
     ],
     UrlInfo = #dubbo_url{

@@ -46,7 +46,7 @@ start_provider() ->
     lists:map(
         fun({ImplModuleName, BehaviourModuleName, Interface, Option}) ->
             MethodList = apply(BehaviourModuleName, get_method_999_list, []),
-            ProviderInfo = dubbo_config_util:gen_provider(ApplicationName, DubboServerPort, Interface, MethodList, Option),
+            ProviderInfo = dubbo_config_util:gen_provider(ApplicationName, DubboServerPort, Interface, MethodList, ImplModuleName, Option),
             dubbo_service_config:export(ProviderInfo),
             logger:info("register provider success ~p ~p", [ImplModuleName, Interface])
         end, ProviderList),

@@ -20,6 +20,8 @@
 %% API
 -export([local_ip_v4/0, local_ip_v4_str/0, parse_url/1, url_to_binary/1, parse_url_parameter/1, binary_list_join/2]).
 
+-define(URL_PATH_SEPARATOR,47).  %% 47 == <<"/">>
+
 local_ip_v4() ->
     {ok, Addrs} = inet:getifaddrs(),
     hd([
@@ -37,7 +39,7 @@ parse_url(Url) when is_binary(Url) ->
     parse_url(binary_to_list(Url));
 parse_url(Url) ->
     case http_uri:parse(Url, []) of
-        {ok, {Scheme, _UserInfo, Host, Port, _Path, Query}} ->
+        {ok, {Scheme, UserInfo, Host, Port, Path, Query}} ->
             QueryStr = case lists:prefix("?", Query) of
                            true ->
                                [_ | Query2] = Query,
@@ -48,8 +50,10 @@ parse_url(Url) ->
             Parameters = parse_url_parameter(QueryStr),
             Result = #dubbo_url{
                 scheme = atom_to_binary(Scheme, utf8),
+                user_info = UserInfo,
                 host = list_to_binary(Host),
                 port = Port,
+                path = Path,
                 parameters = Parameters
             },
             {ok, Result};
@@ -84,10 +88,20 @@ url_to_binary(UrlInfo) ->
             UrlInfo#dubbo_url.scheme,
             UrlInfo#dubbo_url.host,
             UrlInfo#dubbo_url.port,
-            UrlInfo#dubbo_url.path,
+            format_path(UrlInfo#dubbo_url.path),
             ParameterStr
         ])),
     list_to_binary(Value).
+format_path(<< ?URL_PATH_SEPARATOR:8,Rest/binary>>) ->
+    logger:debug("format_path1 ~p",[Rest]),
+    Rest;
+format_path([?URL_PATH_SEPARATOR|Rest]) ->
+    logger:debug("format_path3 ~p",[Rest]),
+    Rest;
+format_path(Value) ->
+    logger:debug("format_path2 ~p",[Value]),
+    Value.
+
 format_parameter(undefined) ->
     "";
 format_parameter(Parameter) when is_map(Parameter) ->
